@@ -181,6 +181,11 @@ krkrz_gdk/
   gen が .cf に datapath="$(appdatapath)/<org>/<app>" を出力するようにした。wdapp install した msixvc で
   再起動後の読み戻しを確認 (GDK のデスクトップパッケージは AppData が仮想化されず実フォルダに書かれる)。
 
+- パッド入力: devkit (Xbox Series) でコアデモのギャラリー操作が一通り動くことを確認。
+- GPU パーティクル (Canvas / ShaderProgram) のデモを開くと固まって操作を受け付けなくなる。D3D12 用シェーダ (DXIL)
+  が無いのは想定どおりだが、エラーで止まらずハングするのは要修正 (DXIL 対応と合わせて調査)。
+- Xbox One: Scarlett と同じ構成のままビルド・パッケージ作成が通る (import は d3d12_x.dll に変わるだけ)。
+
 ## 11. 事前検証で分かっていること
 
 - toolchain ファイルは使わず VS generator の platform 名 (`Gaming.*`) で GDK MSBuild 拡張を使う。
@@ -199,8 +204,8 @@ krkrz_gdk/
 |---|---|---|
 | P0 | 外枠骨格 (完了) | gdk-desktop でコアデモが layout から起動 (確認済み) |
 | P1 | gen / stage / package (完了)、wdapp register / launch (未検証) | 案件フォルダから msixvc が作れる (サンプルで確認済み) |
-| P2 | Scarlett: ビルド・起動 (完了)。全画面表示・セーブ往復 (完了)。残り: パッド入力の確認、GPU canvas の DXIL シェーダ | devkit でコアデモ起動 (確認済み) |
-| P3 | XboxOne、パッケージ chunk 分割、実績等の GDK 専用プラグイン | 必要に応じて |
+| P2 | Scarlett: ビルド・起動 (完了)。全画面表示・セーブ往復・パッド入力 (完了)。残り: GPU canvas の DXIL シェーダ | devkit でコアデモ起動 (確認済み) |
+| P3 | XboxOne (ビルド・パッケージ作成まで完了)、パッケージ chunk 分割、実績等の GDK 専用プラグイン | 必要に応じて |
 
 ## 13. 公開リポジトリとしての注意
 

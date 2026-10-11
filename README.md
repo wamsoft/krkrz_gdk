@@ -158,7 +158,7 @@ Roaming AppData (`%APPDATA%\<orgName>\<appName>\`) に保存します。
 - テンポラリは PersistentLocalStorage の下の `tmp/`
 - OpenGL は無いので Canvas は SDL_GPU 版 (`KRKRZ_CANVAS_GPU`) で、D3D12 用のシェーダー (DXIL) を使う。
   `stage` が Canvas の組み込みシェーダーとスクリプトの ShaderProgram (`gpuShaderDir`) を GXDK の機種向け dxc
-  (`GXDKin\Scarlett|XboxOne\dxc.exe`) で事前コンパイルし、`canvas_shaders.kzgs` として exe の隣に置く
+  (`GXDK/bin/<Scarlett|XboxOne>/dxc.exe`) で事前コンパイルし、`canvas_shaders.kzgs` として exe の隣に置く
   (実行時の再コンパイルが要らない。エンジン内蔵の汎用 DXIL より優先される)
   (dxc / spirv-cross / glslangValidator が要る。Vulkan SDK の Bin か PATH)。D3D12 には点の大きさが無いので、
   `gl_PointSize` を書くシェーダーは点を四角形に広げて描く (変換時に書き換え、エンジンがインスタンス描画する。

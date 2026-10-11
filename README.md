@@ -94,7 +94,8 @@ PROJECT_DIR/build/gdk/
 | `logoDir` | `Logo44x44.png` / `Logo100x100.png` / `Logo150x150.png` / `Logo480x480.png` / `SplashScreenImage.png` を置いたフォルダ。無いものは placeholder を生成 |
 | `icon` | exe に埋め込む .ico (`KRKRZ_WIN_ICON`) |
 | `resourceDir` | エンジン埋め込みリソース (config.cf / messages.json / フォント) の差し替え (`KRKRZ_RESOURCE_DIR`) |
-| `config.options` | `<exe>.cf` に追記する起動オプション |
+| `dataPath` | Desktop のセーブ先 (`<exe>.cf` の `datapath`)。既定 `$(appdatapath)/<orgName>/<appName>`。区切りは `/` |
+| `config.options` | `<exe>.cf` に追記する起動オプション (`datapath=` を書くと `dataPath` より優先) |
 | `cmake.pluginFolders` / `cmake.plugins` | 組み込むプラグイン。**GDK では全て静的リンク** (`staticPlugins` は不要) |
 | `cmake.options` | configure に渡す追加の `-D` |
 | `assetPack` | 資材の配置 (下記) |
@@ -136,6 +137,13 @@ FetchContent で固定して使います。ローカルの clone を使うとき
 - Desktop の exe を msys2 / Git-Bash から直接起動すると DLL 解決に失敗することがあります。PowerShell / cmd から起動してください
 - MakePkg はロゴと SplashScreenImage が layout に無いと失敗します (`gen` が placeholder を作ります)
 - krkrz_dev が master 以外のブランチだと configure 時に警告します (`-DKRKRZ_GDK_ALLOW_NON_MASTER=ON` で抑止)
+
+## Desktop のセーブ先
+
+core の既定 (exe 隣の `savedata`) は、インストールしたパッケージ (`C:\Program Files\WindowsApps\...`) では
+書き込めません。`gen` は `<exe>.cf` に `datapath="$(appdatapath)/<orgName>/<appName>"` を出力し、
+Roaming AppData (`%APPDATA%\<orgName>\<appName>\`) に保存します。
+`$(personalpath)` / `$(savedgamespath)` / `$(exepath)` も使えます。
 
 ## Xbox ターゲットの構成
 

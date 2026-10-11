@@ -196,7 +196,17 @@ def cmd_gen(ctx: Context) -> None:
     if scid:
         # Xbox: SDL_GetPrefPath (XGameSaveFiles) に渡す SCID。src/gdkapp.cpp が読む
         cf.append(f'scid="{scid}"')
-    cf += cfg.get("config", {}).get("options", [])
+    options = cfg.get("config", {}).get("options", [])
+    # Desktop のセーブ先 (System.dataPath)。core の既定は exe 隣の savedata だが、
+    # インストールしたパッケージでは exe のフォルダが読み取り専用なので AppData 側にする。
+    # .cf の値は TJS 文字列として読まれ '\' がエスケープになるので区切りは '/'。
+    # Xbox はこの指定を使わない (src/gdkapp.cpp が決める)
+    if not any(o.strip().lower().startswith("datapath=") for o in options):
+        org = cfg.get("orgName", "krkrz")
+        app = cfg.get("appName", ctx.exe_name)
+        datapath = cfg.get("dataPath", f"$(appdatapath)/{org}/{app}")
+        cf.append(f'datapath="{datapath}"')
+    cf += options
     write_if_changed(gen / f"{ctx.exe_name}.cf", "\n".join(cf) + "\n")
 
     # MicrosoftGame.config (ターゲット別)

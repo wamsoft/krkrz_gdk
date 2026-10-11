@@ -1,0 +1,63 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": { "major": 3, "minor": 25, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Visual Studio 17 2022",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_CONFIGURATION_TYPES": "Debug;Release",
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/cmake/triplets"
+      }
+    },
+    {
+      "name": "gdk-base",
+      "hidden": true,
+      "inherits": "base",
+      "environment": {
+        "XdkEditionTarget": "250404"
+      }
+    },
+    {
+      "name": "win-x64",
+      "displayName": "Windows x64 (no GDK, for comparison)",
+      "inherits": "base",
+      "architecture": { "value": "x64", "strategy": "set" },
+      "cacheVariables": { "VCPKG_TARGET_TRIPLET": "x64-windows-static" }
+    },
+    {
+      "name": "gdk-desktop",
+      "displayName": "GDK Desktop (Gaming.Desktop.x64)",
+      "inherits": "gdk-base",
+      "architecture": { "value": "Gaming.Desktop.x64", "strategy": "set" },
+      "cacheVariables": { "VCPKG_TARGET_TRIPLET": "x64-windows-static" }
+    },
+    {
+      "name": "gxdk-scarlett",
+      "displayName": "GXDK Xbox Series X|S (Gaming.Xbox.Scarlett.x64)",
+      "inherits": "gdk-base",
+      "architecture": { "value": "Gaming.Xbox.Scarlett.x64", "strategy": "set" },
+      "cacheVariables": { "VCPKG_TARGET_TRIPLET": "x64-xbox-scarlett-staticcrt" }
+    },
+    {
+      "name": "gxdk-xboxone",
+      "displayName": "GXDK Xbox One (Gaming.Xbox.XboxOne.x64)",
+      "inherits": "gdk-base",
+      "architecture": { "value": "Gaming.Xbox.XboxOne.x64", "strategy": "set" },
+      "cacheVariables": { "VCPKG_TARGET_TRIPLET": "x64-xbox-xboxone-staticcrt" }
+    }
+  ],
+  "buildPresets": [
+    { "name": "win-x64-debug",         "configurePreset": "win-x64",       "configuration": "Debug"   },
+    { "name": "win-x64-release",       "configurePreset": "win-x64",       "configuration": "Release" },
+    { "name": "gdk-desktop-debug",     "configurePreset": "gdk-desktop",   "configuration": "Debug"   },
+    { "name": "gdk-desktop-release",   "configurePreset": "gdk-desktop",   "configuration": "Release" },
+    { "name": "gxdk-scarlett-debug",   "configurePreset": "gxdk-scarlett", "configuration": "Debug"   },
+    { "name": "gxdk-scarlett-release", "configurePreset": "gxdk-scarlett", "configuration": "Release" },
+    { "name": "gxdk-xboxone-debug",    "configurePreset": "gxdk-xboxone",  "configuration": "Debug"   },
+    { "name": "gxdk-xboxone-release",  "configurePreset": "gxdk-xboxone",  "configuration": "Release" }
+  ]
+}

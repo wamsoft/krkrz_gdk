@@ -1,0 +1,60 @@
+{
+  "name": "krkrz",
+  "displayName": "krkrz core demo",
+  "version": "1.0.0.0",
+  "exeName": "krkrz",
+  "orgName": "krkrz",
+  "appName": "krkrz_gdk_sample",
+  "targets": ["desktop", "scarlett", "xboxone"],
+
+  "identity": {
+    "name": "Sample.KrkrzGDK",
+    "publisher": "CN=KrkrzGDKSample",
+    "titleId": "FFFFFFFF",
+    "msaAppId": "PleaseChangeMe",
+    "storeId": ""
+  },
+  "shellVisuals": {
+    "publisherDisplayName": "krkrz",
+    "description": "kirikiri Z core demo (GDK sample)",
+    "foregroundText": "light",
+    "backgroundColor": "#1F4D8C"
+  },
+  "logoDir": "",
+  "icon": "",
+  "resourceDir": "",
+
+  "config": {
+    "options": []
+  },
+
+  "cmake": {
+    "pluginFolders": [
+      "${BUILD_SYSTEM_DIR}/plugins",
+      "${KRKRZ_BASE}/krkrz_dev/src/plugins"
+    ],
+    "plugins": [
+      "csvParser",
+      "getSample",
+      "json",
+      "KAGParserEx",
+      "layerExBTOA",
+      "layerExImage",
+      "layerExRaster",
+      "layerExVector",
+      "saveStruct",
+      "scriptsEx",
+      "shrinkCopy",
+      "extrans",
+      "extNagano"
+    ],
+    "options": []
+  },
+
+  "assetPack": {
+    "baseFolder": "${PROJECT_DIR}",
+    "sources": [
+      { "type": "mirror", "from": "${KRKRZ_BASE}/krkrz_dev/src/core/data", "to": "data" }
+    ]
+  }
+}

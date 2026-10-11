@@ -126,9 +126,8 @@ PROJECT_DIR/build/gdk/
 
 ## SDL3
 
-`https://github.com/wamsoft/SDL.git` の `gdk-cmake-support-3.4.18` (SDL 3.4.18 + GDK / GXDK の CMake 対応) を
-FetchContent で固定して使います。ローカルの clone を使うときは
-`CMAKEOPT='-DFETCHCONTENT_SOURCE_DIR_SDL3=/path/to/SDL'` を指定します。
+`https://github.com/wamsoft/SDL.git` の `gdk-cmake-support-3.4.18` (SDL 3.4.18 + GDK / GXDK の CMake 対応と
+Xbox 向けの修正) を、コミットを固定して FetchContent で使います。別の版を使うときは `-DKRKRZ_GDK_SDL_GIT_TAG=<tag>`、ローカルの clone を使うときは `CMAKEOPT='-DFETCHCONTENT_SOURCE_DIR_SDL3=/path/to/SDL'` を指定します。
 
 ## 注意点
 

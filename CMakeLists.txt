@@ -114,8 +114,12 @@ project(${PROJECT_NAME} VERSION ${PROJECT_VERSION})
 # ----------------------------------------------------
 
 set(KRKRZ_GDK_SDL_REPOSITORY "https://github.com/wamsoft/SDL.git" CACHE STRING "SDL3 (GDK fork) repository")
-# gdk-cmake-support-3.4.18 ブランチ (SDL 3.4.18 + GDK/GXDK CMake 対応 + GameInput NULL 名修正)
-set(KRKRZ_GDK_SDL_TAG "05e7863a2aa081989bb57d08a646be97a7dc3c3d" CACHE STRING "SDL3 (GDK fork) tag / branch / commit")
+# gdk-cmake-support-3.4.18 ブランチ (SDL 3.4.18 + GDK/GXDK CMake 対応 + GameInput NULL 名修正 +
+# Xbox One の D3D12 行ピッチ修正)
+# CACHE にすると既存のビルドツリーが古い値を持ち続けるので、-D で指定されたときだけ上書きする
+if(NOT KRKRZ_GDK_SDL_GIT_TAG)
+    set(KRKRZ_GDK_SDL_GIT_TAG "efbf29b266e3218794dcad5078a6d11c6716becf")
+endif()
 
 set(SDL_SHARED OFF CACHE BOOL "" FORCE)
 set(SDL_STATIC ON CACHE BOOL "" FORCE)
@@ -127,7 +131,7 @@ set(SDL_DISABLE_INSTALL ON CACHE BOOL "" FORCE)
 include(FetchContent)
 FetchContent_Declare(SDL3
     GIT_REPOSITORY ${KRKRZ_GDK_SDL_REPOSITORY}
-    GIT_TAG ${KRKRZ_GDK_SDL_TAG}
+    GIT_TAG ${KRKRZ_GDK_SDL_GIT_TAG}
 )
 FetchContent_MakeAvailable(SDL3)
 

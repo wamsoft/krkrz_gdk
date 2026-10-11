@@ -186,6 +186,9 @@ krkrz_gdk/
   が無いのは想定どおりだが、エラーで止まらずハングするのは要修正 (DXIL 対応と合わせて調査)。
 - Xbox One: Scarlett と同じ構成のままビルド・パッケージ作成が通る (import は d3d12_x.dll に変わるだけ)。
   Xbox Series devkit 上の互換動作でコアデモの起動を確認 (Xbox One 実機は未確認)。
+- Xbox One: Elements ダイアログ (システム情報) を開くとクラッシュした。SDL の D3D12 バックエンド (GPU / renderer) が
+  バッファ→テクスチャ転送の行ピッチを 256 (D3D12_TEXTURE_DATA_PITCH_ALIGNMENT) で揃えていたが、Xbox One は 1024
+  (D3D12XBOX_TEXTURE_DATA_PITCH_ALIGNMENT) が必要。SDL fork で修正 (上流 main も未修正)。Scarlett は 256 なので影響なし。
 
 ## 11. 事前検証で分かっていること
 

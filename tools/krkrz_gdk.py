@@ -347,6 +347,10 @@ def cmd_stage(ctx: Context) -> None:
     stage.collect(mapping, gen / "logos")
     stage.collect(mapping, gen / f"{ctx.exe_name}.cf", "", "flatten")
     if ctx.is_xbox:
+        # <exe名>.cf はデスクトップ (KRKRZ_DESKTOP) でしか読まれない。全機種で読まれる
+        # アプリフォルダの config.cf として置く (orgname / appname / scid / 起動オプション)
+        cf = mapping.pop(f"{ctx.exe_name}.cf".lower())
+        mapping["config.cf"] = ("config.cf", cf[1])
         # Xbox はエンジンリソースを exe に埋め込まず resource/ に置く (KRKRZ_RESOURCE_EXTERNAL)。
         # システムフォントが無いので同梱フォントも全て含める
         if ctx.cfg.get("resourceDir"):

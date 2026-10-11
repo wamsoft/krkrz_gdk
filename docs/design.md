@@ -211,7 +211,10 @@ krkrz_gdk/
   起動直後に残っていた 3 件は SDL の GPU レンダラー (SDL_Renderer) 自身のシェーダー。SDL fork で、ビルド時に GXDK の
   dxc で事前コンパイルするようにした (ルートシグネチャを埋め込み、頂点入力を SDL の D3D12 の宣言どおり TEXCOORD<n> に
   する)。コアデモのギャラリーと GPU パーティクルで XBSC W1003 は 0 件。tri_texture.vert は 1 テクスチャの組み合わせに
-  合わせたので、texture_advanced (YUV 動画など) と組む場合と線・点の描画 (linepoint) は未確認。Xbox 用の事前コンパイル
+  合わせたが、texture_advanced (3 テクスチャ) と組む YUV 動画 (WebM / MPEG-1) と、線描画 (memoverlay、linepoint) も
+  W1003 / D3D12 エラーなしで描画されることを確認 (頂点シェーダーのルートシグネチャ違いは問題にならない)。
+- Xbox では <exe名>.cf が読まれない (exe 隣の .cf はデスクトップ (KRKRZ_DESKTOP) のみ)。全機種で読まれるアプリ
+  フォルダの config.cf として置くように stage を変更 (orgname / appname / scid / config.options が効く)。Xbox 用の事前コンパイル
   (Runtime Recompilation の警告を消す) は未対応。
 
 ## 11. 事前検証で分かっていること

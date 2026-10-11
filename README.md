@@ -96,7 +96,7 @@ PROJECT_DIR/build/gdk/
 | `gpuShaderDir` | Canvas の ShaderProgram 用シェーダー (実行時に `-gpushadercollect` で書き出した `<key>.vs` / `<key>.fs` の組) のフォルダ。Xbox では `stage` が Canvas の組み込みシェーダーと合わせて D3D12 用 (DXIL) の `canvas_shaders.kzgs` にして exe の隣に置く |
 | `resourceDir` | エンジン埋め込みリソース (config.cf / messages.json / フォント) の差し替え (`KRKRZ_RESOURCE_DIR`) |
 | `dataPath` | Desktop のセーブ先 (`<exe>.cf` の `datapath`)。既定 `$(appdatapath)/<orgName>/<appName>`。区切りは `/` |
-| `config.options` | `<exe>.cf` に追記する起動オプション (`datapath=` を書くと `dataPath` より優先) |
+| `config.options` | 起動オプション。Desktop は `<exe>.cf`、Xbox はアプリフォルダの `config.cf` に書く (`datapath=` を書くと `dataPath` より優先) |
 | `cmake.pluginFolders` / `cmake.plugins` | 組み込むプラグイン。**GDK では全て静的リンク** (`staticPlugins` は不要) |
 | `cmake.options` | configure に渡す追加の `-D` |
 | `assetPack` | 資材の配置 (下記) |
@@ -153,7 +153,7 @@ Roaming AppData (`%APPDATA%\<orgName>\<appName>\`) に保存します。
 - 画面は 1920x1080 の論理面に固定し、実画面に合わせて拡大表示します
 - セーブ (`System.dataPath`):
   - `identity.scid` があれば XGameSaveFiles (SDL の user storage。クラウド同期される)。MicrosoftGame.config に
-    `SaveGameStorage/SCID`、`<exe>.cf` に `scid=` を出力します
+    `SaveGameStorage/SCID`、`config.cf` に `scid=` を出力します
   - 無ければ PersistentLocalStorage の下の `savedata/` (本体ローカルのみ。開発用)
 - テンポラリは PersistentLocalStorage の下の `tmp/`
 - OpenGL は無いので Canvas は SDL_GPU 版 (`KRKRZ_CANVAS_GPU`) で、D3D12 用のシェーダー (DXIL) を使う。

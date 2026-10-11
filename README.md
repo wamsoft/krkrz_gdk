@@ -141,6 +141,7 @@ FetchContent で固定して使います。ローカルの clone を使うとき
 - Application は core の stdapp.cpp ではなく [src/gdkapp.cpp](src/gdkapp.cpp) を使います (`KRKRZ_APP_PLATFORM_OVERRIDE`)
 - エンジンリソース (config.cf / messages.json / フォント) は exe に埋め込まず layout の `resource/` に置きます
   (`KRKRZ_RESOURCE_EXTERNAL`)。`resourceDir` 未指定時は core 同梱のリソース一式 (同梱フォント含む) を使います
+- 画面は 1920x1080 の論理面に固定し、実画面に合わせて拡大表示します
 - セーブは `user://` (SDL storage → XGameSaveFiles)。テンポラリは PersistentLocalStorage があればその下の `tmp/`
 - OpenGL は無いので Canvas は SDL_GPU 版 (`KRKRZ_CANVAS_GPU`)。D3D12 用シェーダ (DXIL) は未対応
 - console REPL / LogCore / DAP / 読み上げ (AccessKit) / OpenMP は無効。REPL は `-replweb` のみ

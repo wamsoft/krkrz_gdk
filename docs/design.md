@@ -170,7 +170,8 @@ krkrz_gdk/
 - core が shell32 を常にリンクしていると、SDL が使う CommandLineToArgvW が SHELL32.dll から import され
   Xbox で起動できない → shell32 はデスクトップのみ。
 - ThorVG が OpenMP を自動検出すると VCOMP140.DLL を import する → Xbox では検出を止める。
-- 起動後の画面は 1280x720 のウィンドウが 1920x1080 の中央に出る (全画面・スケーリングは未対応)。
+- 全画面表示: core の常時フルスクリーン環境 (1920x1080 論理面 + SDL_SetRenderLogicalPresentation) に
+  SDL_PLATFORM_XBOXONE / XBOXSERIES を追加して対応。
 
 ## 11. 事前検証で分かっていること
 
@@ -190,7 +191,7 @@ krkrz_gdk/
 |---|---|---|
 | P0 | 外枠骨格 (完了) | gdk-desktop でコアデモが layout から起動 (確認済み) |
 | P1 | gen / stage / package (完了)、wdapp register / launch (未検証) | 案件フォルダから msixvc が作れる (サンプルで確認済み) |
-| P2 | Scarlett: ビルド・起動 (完了)。残り: 全画面表示、GPU canvas の DXIL シェーダ、セーブ往復の確認 | devkit でコアデモ起動 (確認済み) |
+| P2 | Scarlett: ビルド・起動 (完了)。全画面表示 (完了)。残り: パッド入力・セーブ往復の確認、GPU canvas の DXIL シェーダ | devkit でコアデモ起動 (確認済み) |
 | P3 | XboxOne、パッケージ chunk 分割、実績等の GDK 専用プラグイン | 必要に応じて |
 
 ## 13. 公開リポジトリとしての注意

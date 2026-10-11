@@ -200,7 +200,10 @@ krkrz_gdk/
 - Canvas の D3D12 対応: core の gpushaderc.py に --target dxil (SPIR-V → spirv-cross HLSL SM6.0 → dxc)、
   パック形式 DXIL、組み込みシェーダーの DXIL 版を追加。GLSL の書き換えで決めている set 番号が、そのまま SDL_GPU の
   D3D12 の register space になる。DXIL は Xbox と -gpudriver=direct3d12 のときだけ要求する (SDL は D3D12 を
-  Vulkan より先に試すため)。devkit で GPU パーティクルが動作 (点は 1 ピクセル)。Xbox 用の事前コンパイル
+  Vulkan より先に試すため)。devkit で GPU パーティクルが動作。
+  D3D12 には点の大きさが無いので、gl_PointSize を書く頂点シェーダーは DXIL 変換時に「点を四角形に広げる」形へ
+  書き換え (角 _kz_corner / 画面サイズ _kz_viewport を追加)、エンジンが 4 頂点 × 点の数のインスタンス描画にする。
+  gl_PointCoord も角から求める。粒の大きさと丸いぼかしが PC と同じに出ることを確認。Xbox 用の事前コンパイル
   (Runtime Recompilation の警告を消す) は未対応。
 
 ## 11. 事前検証で分かっていること

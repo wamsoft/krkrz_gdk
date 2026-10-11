@@ -158,8 +158,9 @@ Roaming AppData (`%APPDATA%\<orgName>\<appName>\`) に保存します。
 - テンポラリは PersistentLocalStorage の下の `tmp/`
 - OpenGL は無いので Canvas は SDL_GPU 版 (`KRKRZ_CANVAS_GPU`) で、D3D12 用のシェーダー (DXIL) を使う。
   Canvas 自身の組み込みシェーダーはエンジンに入っている。スクリプトの ShaderProgram は `gpuShaderDir` から変換する
-  (dxc / spirv-cross / glslangValidator が要る。Vulkan SDK の Bin か PATH)。D3D12 には点の大きさが無いので
-  `gl_PointSize` は効かない (点は 1 ピクセル)
+  (dxc / spirv-cross / glslangValidator が要る。Vulkan SDK の Bin か PATH)。D3D12 には点の大きさが無いので、
+  `gl_PointSize` を書くシェーダーは点を四角形に広げて描く (変換時に書き換え、エンジンがインスタンス描画する。
+  `gl_PointCoord` も効く)。インデックス付きの点の描画は点のまま
 - console REPL / LogCore / DAP / 読み上げ (AccessKit) / OpenMP は無効。REPL は `-replweb` のみ
 - vcpkg の freetype は UWP 用パッチを外した overlay port を使います ([vcpkg-ports/](vcpkg-ports/README.md))
 - `config_xbox.cf` / `config_scarlett.cf` / `config_xboxone.cf` で機種別の起動オプションを書けます (System.platformTag)

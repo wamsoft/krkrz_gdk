@@ -6,7 +6,7 @@
 |---|---|---|
 | `desktop` | Gaming.Desktop.x64 (PC / Microsoft Store) | ビルド・起動確認済み |
 | `scarlett` | Gaming.Xbox.Scarlett.x64 (Xbox Series X\|S) | devkit で起動・パッド入力・セーブを確認済み (Canvas の GPU シェーダは未対応) |
-| `xboxone` | Gaming.Xbox.XboxOne.x64 (Xbox One) | ビルド・パッケージ作成まで確認 (実機未確認) |
+| `xboxone` | Gaming.Xbox.XboxOne.x64 (Xbox One) | Xbox Series devkit (互換動作) で起動を確認。Xbox One 実機は未確認 |
 
 エンジン本体は持たず、隣に置いた [krkrz_dev](https://github.com/wamsoft/krkrz_dev) (**master**) を参照します。
 案件ごとの設定と資材は案件フォルダ (`PROJECT_DIR`) に置き、出力も案件フォルダに出します。

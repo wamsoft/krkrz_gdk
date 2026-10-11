@@ -185,6 +185,7 @@ krkrz_gdk/
 - GPU パーティクル (Canvas / ShaderProgram) のデモを開くと固まって操作を受け付けなくなる。D3D12 用シェーダ (DXIL)
   が無いのは想定どおりだが、エラーで止まらずハングするのは要修正 (DXIL 対応と合わせて調査)。
 - Xbox One: Scarlett と同じ構成のままビルド・パッケージ作成が通る (import は d3d12_x.dll に変わるだけ)。
+  Xbox Series devkit 上の互換動作でコアデモの起動を確認 (Xbox One 実機は未確認)。
 
 ## 11. 事前検証で分かっていること
 

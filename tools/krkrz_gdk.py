@@ -320,6 +320,14 @@ def cmd_stage(ctx: Context) -> None:
     mapping["microsoftgame.config"] = ("MicrosoftGame.config", mapping.pop(f"microsoftgame.{ctx.target}.config")[1])
     stage.collect(mapping, gen / "logos")
     stage.collect(mapping, gen / f"{ctx.exe_name}.cf", "", "flatten")
+    if ctx.is_xbox:
+        # Xbox はエンジンリソースを exe に埋め込まず resource/ に置く (KRKRZ_RESOURCE_EXTERNAL)。
+        # システムフォントが無いので同梱フォントも全て含める
+        if ctx.cfg.get("resourceDir"):
+            res = ctx.path(ctx.cfg["resourceDir"])
+        else:
+            res = ctx.krkrz_base / "krkrz_dev/src/core/resource"
+        stage.collect(mapping, res, "resource")
     ap = ctx.cfg.get("assetPack")
     if ap:
         stage.collect_asset_pack(mapping, ap, ctx.vars, ctx.project_dir)
@@ -366,7 +374,9 @@ def cmd_package(ctx: Context) -> None:
 def aumid(ctx: Context) -> str:
     """登録済みパッケージの AUMID (<PackageFamilyName>!Game) を wdapp/xbapp list から探す"""
     tool = gdk_bin("xbapp.exe" if ctx.is_xbox else "wdapp.exe")
-    out = subprocess.run([tool, "list"], capture_output=True, text=True, env=ctx.env()).stdout
+    # xbapp / wdapp はコンソールのコードページで出力する (日本語環境では cp932)
+    out = subprocess.run([tool, "list"], capture_output=True, text=True, encoding="mbcs",
+                         errors="replace", env=ctx.env()).stdout or ""
     name = ctx.cfg.get("identity", {}).get("name", "Sample.Krkrz")
     for line in out.splitlines():
         line = line.strip()

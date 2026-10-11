@@ -159,7 +159,20 @@ krkrz_gdk/
 - lineParser は静的リンク用のエントリ (`krkrz_plugin_<name>`) が無く static では使えない (プラグイン側の修正が必要)。
 - PackageLayout.xml は stage 後の layout の実フォルダから生成する (FileGroup の Include はサブフォルダを辿らないため)。
 
-## 10. 事前検証で分かっていること
+## 10. P2 (Xbox) で分かったこと
+
+- GAMES では wingdi.h の RGBQUAD / BITMAPINFO / LOGFONTW が無い (BITMAPINFOHEADER はある)。
+  core / tp_stub の非 Windows 用定義を GAMES でも使うようにした。
+- デスクトップ専用 API (コンソール / シェル / GDI / DirectWrite / Known Folder / EnumResourceNames 等) は
+  core 側で `TVP_WIN32_DESKTOP` (= `_WIN32` かつ DESKTOP パーティション) 判定に切り替えた。
+- vcpkg の freetype は UWP パッチで `generic` を置き換えて `#undef` するため harfbuzz の hb-ft.cc が壊れる → overlay port。
+- Xbox の既定ライブラリに oldnames.lib が入らない (strdup / stricmp / fileno 等)。
+- core が shell32 を常にリンクしていると、SDL が使う CommandLineToArgvW が SHELL32.dll から import され
+  Xbox で起動できない → shell32 はデスクトップのみ。
+- ThorVG が OpenMP を自動検出すると VCOMP140.DLL を import する → Xbox では検出を止める。
+- 起動後の画面は 1280x720 のウィンドウが 1920x1080 の中央に出る (全画面・スケーリングは未対応)。
+
+## 11. 事前検証で分かっていること
 
 - toolchain ファイルは使わず VS generator の platform 名 (`Gaming.*`) で GDK MSBuild 拡張を使う。
   vcpkg は `vcpkg.cmake` を直接 toolchain にし、chainload しない。
@@ -171,16 +184,16 @@ krkrz_gdk/
 - MakePkg は SplashScreenImage 必須、ロゴの実ファイルが layout に無いと 0x80070057。
 - Desktop exe は msys2 / Git-Bash から直接起動すると DLL 解決に失敗する。
 
-## 11. 段階計画
+## 12. 段階計画
 
 | 段階 | 内容 | 完了条件 |
 |---|---|---|
 | P0 | 外枠骨格 (完了) | gdk-desktop でコアデモが layout から起動 (確認済み) |
 | P1 | gen / stage / package (完了)、wdapp register / launch (未検証) | 案件フォルダから msixvc が作れる (サンプルで確認済み) |
-| P2 | Scarlett: GPU canvas + DXIL シェーダ経路、セーブ (XGameSave)、リソース埋め込み確認 | devkit でコアデモ起動・セーブ往復 |
+| P2 | Scarlett: ビルド・起動 (完了)。残り: 全画面表示、GPU canvas の DXIL シェーダ、セーブ往復の確認 | devkit でコアデモ起動 (確認済み) |
 | P3 | XboxOne、パッケージ chunk 分割、実績等の GDK 専用プラグイン | 必要に応じて |
 
-## 12. 公開リポジトリとしての注意
+## 13. 公開リポジトリとしての注意
 
 - 案件名・タイトル・課題キーを書かない。identity 実値は案件側の gdk-config.json にだけ置く。
 - 他機種のコンソール SDK 由来の情報は持ち込まない。Xbox 向けは

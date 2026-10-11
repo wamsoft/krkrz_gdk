@@ -4,6 +4,9 @@
 # (Gaming.Desktop.x64 / Gaming.Xbox.Scarlett.x64 / Gaming.Xbox.XboxOne.x64) で
 # GDK の MSBuild 拡張に任せる。
 
+# krkrz_gdk リポジトリのルート (macro 内では CMAKE_CURRENT_LIST_DIR が呼び出し側になるため控えておく)
+get_filename_component(KRKRZ_GDK_ROOT "${CMAKE_CURRENT_LIST_DIR}/.." ABSOLUTE)
+
 # CMAKE_GENERATOR_PLATFORM から KRKRZ_GDK_TARGET (desktop / scarlett / xboxone / win) を決める
 function(krkrz_gdk_detect_target)
     set(_platform "${CMAKE_GENERATOR_PLATFORM}")
@@ -71,8 +74,24 @@ macro(krkrz_gdk_configure_core)
         set(KRKRZ_REPL_FILE OFF CACHE BOOL "" FORCE)
         set(KRKRZ_REPL_WEB ON CACHE BOOL "" FORCE)
         set(KRKRZ_REPL_WEB_BIND_ANY ON CACHE BOOL "" FORCE)
-        # OpenGL は Xbox に無い。SDL_GPU (D3D12) 版 Canvas は後続対応
+        # OpenGL は Xbox に無い。Canvas は SDL_GPU (D3D12) 版を使う
         set(KRKRZ_USE_OPENGL OFF CACHE BOOL "" FORCE)
+        set(KRKRZ_CANVAS_GPU ON CACHE BOOL "" FORCE)
+        # Elements の読み上げ (AccessKit) は Win32 のウィンドウサブクラス前提
+        set(KRKRZ_USE_A11Y OFF CACHE BOOL "" FORCE)
+        # WIN32 は真だがデスクトップではない (.cf 探索規約 / REPL 既定などに影響)
+        set(KRKRZ_DESKTOP OFF)
+        # core の stdapp.cpp を外して src/gdkapp.cpp の Application を使う
+        set(KRKRZ_APP_PLATFORM_OVERRIDE TRUE)
+        list(APPEND KRKRZ_SRC_PLATFORM ${KRKRZ_GDK_ROOT}/src/gdkapp.cpp)
+        # エンジンリソースは exe に埋め込まず layout/resource/ に置く (tools/krkrz_gdk.py stage)
+        set(KRKRZ_RESOURCE_EXTERNAL TRUE)
+        # Xbox の既定ライブラリには oldnames.lib (strdup / stricmp / fileno 等の
+        # POSIX 互換名) が入らない。依存ライブラリ (bzip2 / libjpeg-turbo / ThorVG) が使う
+        list(APPEND KRKRZ_LIB_PLATFORM oldnames.lib)
+        # ThorVG が OpenMP を自動検出すると VCOMP140.DLL を import する。Static CRT 構成の
+        # Xbox パッケージには入らないので検出ごと止める
+        set(CMAKE_DISABLE_FIND_PACKAGE_OpenMP TRUE)
     endif()
 
     list(APPEND KRKRZ_DEFINES_PLATFORM
@@ -84,8 +103,10 @@ macro(krkrz_gdk_configure_core)
     )
     if(KRKRZ_GDK_TARGET STREQUAL "desktop")
         list(APPEND KRKRZ_DEFINES_PLATFORM KRKRZ_GDK_DESKTOP=1)
-    elseif(KRKRZ_GDK_XBOX)
-        list(APPEND KRKRZ_DEFINES_PLATFORM KRKRZ_GDK_XBOX=1)
+    elseif(KRKRZ_GDK_TARGET STREQUAL "scarlett")
+        list(APPEND KRKRZ_DEFINES_PLATFORM KRKRZ_GDK_XBOX=1 KRKRZ_GDK_SCARLETT=1)
+    elseif(KRKRZ_GDK_TARGET STREQUAL "xboxone")
+        list(APPEND KRKRZ_DEFINES_PLATFORM KRKRZ_GDK_XBOX=1 KRKRZ_GDK_XBOXONE=1)
     endif()
 endmacro()
 

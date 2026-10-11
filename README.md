@@ -5,8 +5,8 @@
 | ターゲット | platform | 状況 |
 |---|---|---|
 | `desktop` | Gaming.Desktop.x64 (PC / Microsoft Store) | ビルド・起動確認済み |
-| `scarlett` | Gaming.Xbox.Scarlett.x64 (Xbox Series X\|S) | 未対応 (描画の SDL_GPU 化が必要) |
-| `xboxone` | Gaming.Xbox.XboxOne.x64 (Xbox One) | 未対応 |
+| `scarlett` | Gaming.Xbox.Scarlett.x64 (Xbox Series X\|S) | ビルド・devkit で起動確認済み (Canvas の GPU シェーダは未対応) |
+| `xboxone` | Gaming.Xbox.XboxOne.x64 (Xbox One) | 未確認 |
 
 エンジン本体は持たず、隣に置いた [krkrz_dev](https://github.com/wamsoft/krkrz_dev) (**master**) を参照します。
 案件ごとの設定と資材は案件フォルダ (`PROJECT_DIR`) に置き、出力も案件フォルダに出します。
@@ -135,6 +135,17 @@ FetchContent で固定して使います。ローカルの clone を使うとき
 - Desktop の exe を msys2 / Git-Bash から直接起動すると DLL 解決に失敗することがあります。PowerShell / cmd から起動してください
 - MakePkg はロゴと SplashScreenImage が layout に無いと失敗します (`gen` が placeholder を作ります)
 - krkrz_dev が master 以外のブランチだと configure 時に警告します (`-DKRKRZ_GDK_ALLOW_NON_MASTER=ON` で抑止)
+
+## Xbox ターゲットの構成
+
+- Application は core の stdapp.cpp ではなく [src/gdkapp.cpp](src/gdkapp.cpp) を使います (`KRKRZ_APP_PLATFORM_OVERRIDE`)
+- エンジンリソース (config.cf / messages.json / フォント) は exe に埋め込まず layout の `resource/` に置きます
+  (`KRKRZ_RESOURCE_EXTERNAL`)。`resourceDir` 未指定時は core 同梱のリソース一式 (同梱フォント含む) を使います
+- セーブは `user://` (SDL storage → XGameSaveFiles)。テンポラリは PersistentLocalStorage があればその下の `tmp/`
+- OpenGL は無いので Canvas は SDL_GPU 版 (`KRKRZ_CANVAS_GPU`)。D3D12 用シェーダ (DXIL) は未対応
+- console REPL / LogCore / DAP / 読み上げ (AccessKit) / OpenMP は無効。REPL は `-replweb` のみ
+- vcpkg の freetype は UWP 用パッチを外した overlay port を使います ([vcpkg-ports/](vcpkg-ports/README.md))
+- `config_xbox.cf` / `config_scarlett.cf` / `config_xboxone.cf` で機種別の起動オプションを書けます (System.platformTag)
 
 ## ライセンス
 

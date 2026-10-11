@@ -32,7 +32,7 @@ PROJECT_DIR 省略時は krkrz_gdk 同梱のサンプル設定 (コアデモ) �
 ```
 krkrz_gdk/
   CMakeLists.txt          外枠 (core を add_subdirectory)
-  CMakePresets.json       VS2022 generator + Gaming.* platform (gdk-desktop / gxdk-scarlett / gxdk-xboxone、比較用 win-x64)
+  CMakePresets.json       VS2022 generator + Gaming.* platform (gdk-desktop / gxdk-scarlett / gxdk-xboxone) と WIN 版の win-x64
   Makefile                tools/krkrz_gdk.py の薄いラッパー (PROJECT_DIR / TARGET / CONFIG)
   gdk-config.json         サンプル案件 (コアデモ)
   cmake/
@@ -65,7 +65,8 @@ krkrz_gdk/
    (`canvas_shaders.kzgs`) を置く
 4. **package** — `MakePkg pack` (Desktop は `/pc`)。PackageLayout.xml は stage 後の実フォルダから生成する
    (FileGroup の Include はサブフォルダを辿らないため)
-5. **register / deploy / launch** — Desktop: `wdapp register` → `wdapp launch`、Xbox: `xbapp deploy` → `xbapp launch`
+5. **register / deploy / launch / run** — Desktop: `wdapp register` → `wdapp launch` (または `run` で直接)、
+   Xbox: `xbapp deploy` → `xbapp launch`、WIN 版: `run` (`RUNOPT` で起動オプションを足せる)
 
 ## 5. 起動オプションファイル
 
@@ -88,11 +89,18 @@ krkrz_gdk/
 | `KRKRZ_USE_LOGCORE=OFF` | デスクトップ向けのログ機能 (ファイル出力・コンソール) |
 | `CMAKE_DISABLE_FIND_PACKAGE_OpenMP` | ThorVG が OpenMP を見つけると VCOMP140.DLL を import して起動できない |
 | リンクに `oldnames.lib` | Xbox の既定ライブラリに入っておらず `strdup` / `stricmp` / `fileno` 等が解決しない |
-| 定義 `KRKRZ_GDK` / `KRKRZ_GDK_XBOX` / `KRKRZ_GDK_SCARLETT` / `KRKRZ_GDK_XBOXONE` / `KRKRZ_GDK_DESKTOP`、`KRKRZ_VARIANT_OPTION=_GDK` | 外枠・プラグインのソースでの判定用。`System.variant` は `SDL_GDK` |
+| 定義 `KRKRZ_GDK` / `KRKRZ_GDK_XBOX` / `KRKRZ_GDK_SCARLETT` / `KRKRZ_GDK_XBOXONE` / `KRKRZ_GDK_DESKTOP`、`KRKRZ_VARIANT_OPTION=_GDK` | 外枠・プラグインのソースでの判定用。`System.buildVariantName` は `SDL_GDK` |
 | `MA_NO_RUNTIME_LINKING` | miniaudio が実行時に DLL を探しに行かない |
 
 全ターゲットで `KRKRZ_ENABLE_DAP` / `KRKRZ_BUILD_TESTS` は OFF。
 Desktop は core の既定 (stdapp.cpp / 埋め込みリソース / OpenGL) のまま。
+
+**WIN 版 (`win`)** は GDK を使わない通常の Win32 SDL ビルド (VS generator の `x64`、triplet `x64-windows-static`)。
+krkrz_nx の Windows 版と同じ位置づけで、プラグイン・資材・起動オプションを Xbox と共通にしたまま PC で確認するためのもの。
+描画を Xbox と同じにするため `KRKRZ_USE_OPENGL=OFF` / `KRKRZ_CANVAS_GPU=ON` を既定にし (`-D` で上書き可)、
+stage が `<exe>.cf` に `gpudriver=direct3d12` を足す。REPL / LogCore などデスクトップの開発機能は残す。
+`KRKRZ_GDK` は立てず `KRKRZ_GDK_WIN` だけ定義する (`System.buildVariantName` は `SDL`)。
+MicrosoftGame.config / ロゴ / MakePkg は使わず、`package` は layout の zip。
 `krkrz_platform_target_hook` で Desktop の loose 実行に要る `Microsoft.Xbox.Services.GDK.C.Thunks.dll` を出力先へコピーする。
 
 ## 7. Xbox 用 Application (`src/gdkapp.cpp`)

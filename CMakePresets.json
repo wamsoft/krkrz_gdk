@@ -24,7 +24,7 @@
     },
     {
       "name": "win-x64",
-      "displayName": "Windows x64 (no GDK, for comparison)",
+      "displayName": "Windows x64 (no GDK, same rendering as Xbox)",
       "inherits": "base",
       "architecture": { "value": "x64", "strategy": "set" },
       "cacheVariables": { "VCPKG_TARGET_TRIPLET": "x64-windows-static" }

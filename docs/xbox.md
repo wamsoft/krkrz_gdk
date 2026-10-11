@@ -62,9 +62,9 @@ python tools/krkrz_gdk.py --project /path/to/game --target scarlett build stage 
 - **点スプライト**: D3D12 には点の大きさが無いので、`gl_PointSize` を書くシェーダーは変換時に「点を四角形に広げる」
   形へ書き換え、エンジンが四角形のインスタンス描画にする (`gl_PointCoord` も効く)。PC (Vulkan) と同じ粒の大きさ・
   ぼかしで出ることを確認
-- **スクリプトの ShaderProgram**: PC で `-gpushadercollect=<フォルダ>` を付けて動かし、書き出された
-  `<key>.vs` / `<key>.fs` の組を `gpuShaderDir` に置く。パックに無いシェーダーは Xbox では作れない
-  (実行時にソースからコンパイルする手段が無い)
+- **スクリプトの ShaderProgram**: WIN 版 (`--target win`) を `-gpushadercollect=<フォルダ>` 付きで動かし、書き出された
+  `<key>.vs` / `<key>.fs` の組のフォルダを `gpuShaderDir` に指定する。パックに無いシェーダーは Xbox では作れない
+  (実行時にソースからコンパイルする手段が無い)。WIN 版も同じ D3D12 なので、WIN 版で動けば Xbox でも同じパックで動く
 
 ## 実機で分かったこと (トラブルの記録)
 
@@ -88,5 +88,6 @@ python tools/krkrz_gdk.py --project /path/to/game --target scarlett build stage 
   本体側で実装予定 → 本体 `MovieMFMigration.md` 「SDL 版 overlay 動画の表示位置・大きさ」)
 - **インデックス付きの点の描画** (`drawMesh` に index を渡す点) は四角形化しておらず点のまま
 - Xbox One 実機は未確認 (Series devkit の互換動作のみ)
-- PC (Desktop) の D3D12 (`-gpudriver=direct3d12`) は未確認。Desktop の既定は OpenGL
+- PC の D3D12 は WIN 版で確認済み (2026-10-11: Canvas の各ページ・カスタムシェーダー・GPU パーティクル・線描画・Elements)。
+  Desktop (GDK) の既定は OpenGL のまま
 - devkit のネットワーク越しの `-replweb`、パッケージ (xvc) の chunk 分割、実績 / ユーザー / ストアは未着手

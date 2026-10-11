@@ -17,7 +17,7 @@ function(krkrz_gdk_detect_target)
     elseif(_platform STREQUAL "Gaming.Xbox.XboxOne.x64")
         set(_target xboxone)
     else()
-        # 比較用の通常 Win32 ビルド (GDK なし)
+        # 通常の Win32 ビルド (GDK なし)。Xbox と同じ描画構成で PC 上の確認に使う
         set(_target win)
     endif()
 
@@ -92,15 +92,31 @@ macro(krkrz_gdk_configure_core)
         # ThorVG が OpenMP を自動検出すると VCOMP140.DLL を import する。Static CRT 構成の
         # Xbox パッケージには入らないので検出ごと止める
         set(CMAKE_DISABLE_FIND_PACKAGE_OpenMP TRUE)
+    elseif(KRKRZ_GDK_TARGET STREQUAL "win")
+        # WIN 版: GDK を使わない通常の Win32 SDL ビルドで、描画は Xbox と同じ SDL_GPU
+        # (Canvas の GPU 版。D3D12 は起動オプション -gpudriver=direct3d12 で選ぶ)。
+        # REPL / LogCore などデスクトップの開発機能はそのまま使える。
+        # -DKRKRZ_USE_OPENGL=ON -DKRKRZ_CANVAS_GPU=OFF を渡せば OpenGL 版にもできる
+        if(NOT DEFINED KRKRZ_USE_OPENGL)
+            set(KRKRZ_USE_OPENGL OFF CACHE BOOL "use opengl")
+        endif()
+        if(NOT DEFINED KRKRZ_CANVAS_GPU)
+            set(KRKRZ_CANVAS_GPU ON CACHE BOOL "Canvas classes on SDL_GPU (exclusive with KRKRZ_USE_OPENGL)")
+        endif()
     endif()
 
-    list(APPEND KRKRZ_DEFINES_PLATFORM
-        # miniaudio のバックエンドを動的ロードしない
-        MA_NO_RUNTIME_LINKING
-        # System.buildVariantName の追加定義
-        KRKRZ_VARIANT_OPTION=_GDK
-        KRKRZ_GDK=1
-    )
+    if(KRKRZ_GDK_TARGET STREQUAL "win")
+        # GDK を使わないので KRKRZ_GDK は立てない (System.buildVariantName は SDL のまま)
+        list(APPEND KRKRZ_DEFINES_PLATFORM KRKRZ_GDK_WIN=1)
+    else()
+        list(APPEND KRKRZ_DEFINES_PLATFORM
+            # miniaudio のバックエンドを動的ロードしない
+            MA_NO_RUNTIME_LINKING
+            # System.buildVariantName の追加定義
+            KRKRZ_VARIANT_OPTION=_GDK
+            KRKRZ_GDK=1
+        )
+    endif()
     if(KRKRZ_GDK_TARGET STREQUAL "desktop")
         list(APPEND KRKRZ_DEFINES_PLATFORM KRKRZ_GDK_DESKTOP=1)
     elseif(KRKRZ_GDK_TARGET STREQUAL "scarlett")

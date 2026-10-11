@@ -8,6 +8,7 @@ SDL3 ベースで、プラグインは全て静的リンクします。
 | `desktop` | Gaming.Desktop.x64 (PC / Microsoft Store) | ビルド・起動、msixvc のインストールとセーブを確認済み |
 | `scarlett` | Gaming.Xbox.Scarlett.x64 (Xbox Series X\|S) | devkit で起動・パッド入力・セーブ・Canvas (D3D12)・動画を確認済み |
 | `xboxone` | Gaming.Xbox.XboxOne.x64 (Xbox One) | Xbox Series devkit (互換動作) で起動を確認。Xbox One 実機は未確認 |
+| `win` | x64 (GDK なし、通常の Win32) | Xbox と同じ描画構成 (SDL_GPU / D3D12) の PC 版。開発中の確認用 |
 
 エンジン本体は持たず、隣に置いた [krkrz_dev](https://github.com/wamsoft/krkrz_dev) (**master**) を参照します。
 案件ごとの設定と資材は案件フォルダ (`PROJECT_DIR`) に置き、出力も案件フォルダに出します。
@@ -148,6 +149,29 @@ core の既定 (exe 隣の `savedata`) は、インストールしたパッケ�
 Roaming AppData (`%APPDATA%\<orgName>\<appName>\`) に保存します。
 `$(personalpath)` / `$(savedgamespath)` / `$(exepath)` も使えます。
 
+## WIN 版 (Xbox と同じ構成を PC で動かす)
+
+`--target win` は GDK を使わない通常の Win32 版です。プラグイン・資材・起動オプションは Xbox と同じものを使い、
+描画も Xbox と同じ SDL_GPU (Canvas の GPU 版、D3D12) にします。devkit を使わずに PC で動作を確かめたり、
+REPL などデスクトップの開発機能で調べたりするのに使います。GDK のインストールは要りません。
+
+```bash
+python tools/krkrz_gdk.py --project /path/to/game --target win build stage run
+# 起動オプションを足す
+RUNOPT="-replfile=C:/tmp/ch" make PROJECT_DIR=/path/to/game TARGET=win run
+```
+
+- `stage` は `<exe>.cf` に `gpudriver=direct3d12` を足します (`config.options` に `gpudriver=` を書けばそちらが優先。
+  `vulkan` で Vulkan)
+- `gpuShaderDir` のシェーダーは汎用の dxc (Vulkan SDK) で DXIL にして `canvas_shaders.kzgs` として exe の隣に置きます
+- `package` は layout をそのまま zip にします
+- OpenGL 版にしたいときは `CMAKEOPT='-DKRKRZ_USE_OPENGL=ON -DKRKRZ_CANVAS_GPU=OFF'`
+
+**スクリプトのシェーダーを集める**: Xbox と WIN 版は実行時にシェーダーをコンパイルできないので、ShaderProgram の
+ソースは事前にパックにしておく必要があります。WIN 版を `-gpushadercollect=<フォルダ>` 付きで動かして該当の画面を
+一通り開くと、パックに無いシェーダーが `<key>.vs` / `<key>.fs` として書き出されます。そのフォルダを
+gdk-config.json の `gpuShaderDir` に指定すると、WIN 版・Xbox とも `stage` でパックに入ります。
+
 ## Xbox で動かす
 
 ```bash
@@ -171,18 +195,21 @@ Desktop との主な違い:
 
 ## 機能の対応状況
 
-| 機能 | Desktop | Xbox |
-|---|---|---|
-| 起動・全画面表示 | ○ | ○ (1920x1080 論理面) |
-| パッド入力 | ○ | ○ |
-| セーブ (`System.dataPath`) | ○ `%APPDATA%\<orgName>\<appName>\` | ○ XGameSaveFiles (SCID 指定時) / PersistentLocalStorage |
-| 描画 | OpenGL (既定) | SDL_GPU (D3D12) |
-| Canvas / ShaderProgram | ○ OpenGL 版 | ○ SDL_GPU 版。シェーダーは事前変換したものだけ (`gpuShaderDir`)。点スプライトは四角形で代用 |
-| 動画 (VideoOverlay) | WebM / MPEG-1 | WebM / MPEG-1 (YUV)。overlay 系の `setPos` / `setSize` は効かず画面全体に出る (SDL 版共通の制限) |
-| Elements ダイアログ | ○ | ○ |
-| 静的プラグイン | ○ | ○ |
-| REPL | ○ console / `-replfile` / `-replweb` | `-replweb` のみ (devkit 越しの利用は未確認) |
-| 読み上げ (AccessKit) / LogCore | ○ | × |
+| 機能 | Desktop | win | Xbox |
+|---|---|---|---|
+| 起動・全画面表示 | ○ | ○ | ○ (1920x1080 論理面) |
+| パッド入力 | ○ | ○ | ○ |
+| セーブ (`System.dataPath`) | ○ `%APPDATA%\<orgName>\<appName>\` | ○ 同左 | ○ XGameSaveFiles (SCID 指定時) / PersistentLocalStorage |
+| 描画 | OpenGL (既定) | SDL_GPU (D3D12) | SDL_GPU (D3D12) |
+| Canvas / ShaderProgram | ○ OpenGL 版 | ○ SDL_GPU 版 | ○ SDL_GPU 版 |
+| 動画 (VideoOverlay) | WebM / MPEG-1 | 同左 | 同左。overlay 系の `setPos` / `setSize` はどれも効かず画面全体に出る (SDL 版共通の制限) |
+| Elements ダイアログ | ○ | ○ | ○ |
+| 静的プラグイン | ○ | ○ | ○ |
+| REPL | ○ console / `-replfile` / `-replweb` | ○ 同左 | `-replweb` のみ (devkit 越しの利用は未確認) |
+| 読み上げ (AccessKit) / LogCore | ○ | ○ | × |
+
+SDL_GPU 版では ShaderProgram のシェーダーを事前変換したもの (`gpuShaderDir`) しか使えません。点スプライトは
+D3D12 に点の大きさが無いので四角形で代用しています。
 
 既知の制限と未確認の項目は [docs/xbox.md](docs/xbox.md#既知の制限未確認) を見てください。
 

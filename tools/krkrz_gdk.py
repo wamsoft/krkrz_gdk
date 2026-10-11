@@ -9,13 +9,16 @@
     configure  cmake configure (VS2022 generator + Gaming.* platform)
     build      エンジン exe をビルド
     stage      layout フォルダ (エンジン + 生成物 + assetPack) を作る
-    package    MakePkg で msixvc / xvc を作る
-    run        layout の exe を直接起動 (Desktop のみ)
+    package    MakePkg で msixvc / xvc を作る (win は layout の zip)
+    run        layout の exe を直接起動 (Desktop / win)
     register   wdapp register で layout を登録 (Desktop)
     launch     wdapp / xbapp で起動
     deploy     xbapp deploy で layout を devkit へ送る (Xbox)
     all        gen configure build stage package
     vars       解決済みの設定を表示
+
+ターゲット: desktop (Gaming.Desktop.x64) / scarlett / xboxone (Xbox) /
+            win (GDK を使わない通常の Win32 版。描画は Xbox と同じ SDL_GPU で、PC 上の確認用)
 
 PROJECT_DIR (= --project / 環境変数 PROJECT_DIR) 省略時は krkrz_gdk 自身のサンプル設定を使う。
 python 標準ライブラリのみで動く。
@@ -46,6 +49,8 @@ TARGETS = {
     "desktop":  ("gdk-desktop",   "Gaming.Desktop.x64",        "PC",          False),
     "scarlett": ("gxdk-scarlett", "Gaming.Xbox.Scarlett.x64",  "Scarlett",    True),
     "xboxone":  ("gxdk-xboxone",  "Gaming.Xbox.XboxOne.x64",   "XboxOne",     True),
+    # GDK を使わない通常の Win32 版 (MicrosoftGame.config / MakePkg なし)
+    "win":      ("win-x64",       "x64",                       None,          False),
 }
 
 LOGOS = [
@@ -86,8 +91,9 @@ class Context:
 
         self.target = args.target or (self.cfg.get("targets") or ["desktop"])[0]
         if self.target not in TARGETS:
-            raise Error(f"unknown target '{self.target}' (desktop / scarlett / xboxone)")
+            raise Error(f"unknown target '{self.target}' (desktop / scarlett / xboxone / win)")
         self.preset, self.platform, self.device_family, self.is_xbox = TARGETS[self.target]
+        self.is_gdk = self.device_family is not None
         self.build_config = args.config
 
         root = os.environ.get("KRKRZ_GDK_BUILD_ROOT") or self.cfg.get("buildDir")
@@ -215,6 +221,8 @@ def cmd_gen(ctx: Context) -> None:
     shell = cfg.get("shellVisuals", {})
     display = cfg.get("displayName", cfg.get("name", "krkrz"))
     for name, (_, _, family, xbox) in TARGETS.items():
+        if family is None:
+            continue
         desktop_reg = "" if xbox else (
             "\n\t<DesktopRegistration>\n\t\t<DependencyList>\n"
             "\t\t\t<KnownDependency Name=\"VC14\"/>\n\t\t</DependencyList>\n\t</DesktopRegistration>\n")
@@ -337,15 +345,23 @@ def engine_dir(ctx: Context) -> Path:
 def cmd_stage(ctx: Context) -> None:
     print(f"[stage] -> {ctx.layout_dir}")
     gen = ctx.generated_dir
-    if not (gen / f"MicrosoftGame.{ctx.target}.config").exists():
+    if not (gen / f"{ctx.exe_name}.cf").exists():
         cmd_gen(ctx)
     mapping: dict = {}
     # 先勝ち: エンジン → 生成物 → 案件 assetPack
     stage.collect(mapping, engine_dir(ctx), exclude=ENGINE_EXCLUDE)
-    stage.collect(mapping, gen / f"MicrosoftGame.{ctx.target}.config", "", "flatten")
-    mapping["microsoftgame.config"] = ("MicrosoftGame.config", mapping.pop(f"microsoftgame.{ctx.target}.config")[1])
-    stage.collect(mapping, gen / "logos")
-    stage.collect(mapping, gen / f"{ctx.exe_name}.cf", "", "flatten")
+    if ctx.is_gdk:
+        stage.collect(mapping, gen / f"MicrosoftGame.{ctx.target}.config", "", "flatten")
+        mapping["microsoftgame.config"] = ("MicrosoftGame.config", mapping.pop(f"microsoftgame.{ctx.target}.config")[1])
+        stage.collect(mapping, gen / "logos")
+        stage.collect(mapping, gen / f"{ctx.exe_name}.cf", "", "flatten")
+    else:
+        # WIN 版: Xbox と同じく D3D12 で動かす (-gpudriver を config.options に書けばそちらが優先)
+        stage.collect(mapping, win_cf(ctx), "", "flatten")
+        pack = build_gpu_shader_pack(ctx)
+        if pack:
+            stage.collect(mapping, pack, "", "flatten")
+            mapping["canvas_shaders.kzgs"] = ("canvas_shaders.kzgs", mapping.pop(pack.name.lower())[1])
     if ctx.is_xbox:
         # <exe名>.cf はデスクトップ (KRKRZ_DESKTOP) でしか読まれない。全機種で読まれる
         # アプリフォルダの config.cf として置く (orgname / appname / scid / 起動オプション)
@@ -366,6 +382,17 @@ def cmd_stage(ctx: Context) -> None:
     if ap:
         stage.collect_asset_pack(mapping, ap, ctx.vars, ctx.project_dir)
     stage.sync(mapping, ctx.layout_dir, (ap or {}).get("transfer", "copy"))
+
+
+def win_cf(ctx: Context) -> Path:
+    """WIN 版の <exe名>.cf。gen の内容に gpudriver=direct3d12 を足したもの"""
+    src = ctx.generated_dir / f"{ctx.exe_name}.cf"
+    text = src.read_text(encoding="utf-8")
+    if not any(l.strip().lower().lstrip("-").startswith("gpudriver=") for l in text.splitlines()):
+        text += "gpudriver=direct3d12\n"
+    out = ctx.generated_dir / "win" / src.name
+    write_if_changed(out, text)
+    return out
 
 
 XBOX_DXC_DIR = {"scarlett": "Scarlett", "xboxone": "XboxOne"}
@@ -390,7 +417,7 @@ def build_gpu_shader_pack(ctx: Context) -> Path | None:
 
     を GXDK の機種向け dxc で DXIL にする。機種向けの dxc は事前コンパイル済みのコードを
     入れるので、実行時の再コンパイル (XBSC W1003) が要らなくなる。dxc が無ければ
-    gpuShaderDir があるときだけ汎用の dxc で作る (組み込みはエンジン内蔵の汎用 DXIL)"""
+    (WIN 版を含む) gpuShaderDir があるときだけ汎用の dxc で作る (組み込みはエンジン内蔵の汎用 DXIL)"""
     gpu = ctx.krkrz_base / "krkrz_dev/src/core/common/visual/gpu"
     tool = gpu / "gpushaderc.py"
     dxc = xbox_dxc(ctx)
@@ -404,7 +431,7 @@ def build_gpu_shader_pack(ctx: Context) -> Path | None:
         inputs.append(src)
     if not inputs:
         return None
-    if not dxc:
+    if not dxc and ctx.is_xbox:
         print("  warning: GXDK dxc not found; shaders are generic DXIL (recompiled at runtime)")
 
     out = ctx.generated_dir / f"canvas_shaders.{ctx.target}.kzgs"
@@ -451,6 +478,13 @@ def write_package_layout(ctx: Context) -> Path:
 def cmd_package(ctx: Context) -> None:
     if not ctx.layout_dir.exists():
         raise Error(f"layout not found: {ctx.layout_dir} (run stage first)")
+    if not ctx.is_gdk:
+        # WIN 版はパッケージ形式を持たないので layout をそのまま zip にする
+        ctx.package_dir.mkdir(parents=True, exist_ok=True)
+        base = ctx.package_dir / f"{ctx.exe_name}-{ctx.cfg.get('version', '1.0.0.0')}-win"
+        print(f"[package] -> {base}.zip")
+        shutil.make_archive(str(base), "zip", ctx.layout_dir)
+        return
     layout_xml = write_package_layout(ctx)
     ctx.package_dir.mkdir(parents=True, exist_ok=True)
     print(f"[package] -> {ctx.package_dir}")
@@ -487,16 +521,18 @@ def aumid(ctx: Context) -> str:
 
 def cmd_run(ctx: Context) -> None:
     if ctx.is_xbox:
-        raise Error("run is Desktop only (use deploy + launch for Xbox)")
+        raise Error("run is Desktop / win only (use deploy + launch for Xbox)")
     exe = ctx.layout_dir / f"{ctx.exe_name}.exe"
     if not exe.exists():
         raise Error(f"{exe} not found (run stage first)")
-    print(f"[run] {exe}")
-    subprocess.Popen([str(exe)], cwd=ctx.layout_dir, env=ctx.env())
+    # 環境変数 RUNOPT で起動オプションを足せる (例: RUNOPT="-replfile=C:/tmp/ch -gpushadercollect=gpushaders")
+    opts = shlex_split(os.environ.get("RUNOPT", ""))
+    print(f"[run] {exe} {' '.join(opts)}")
+    subprocess.Popen([str(exe)] + opts, cwd=ctx.layout_dir, env=ctx.env())
 
 
 def cmd_register(ctx: Context) -> None:
-    if ctx.is_xbox:
+    if ctx.is_xbox or not ctx.is_gdk:
         raise Error("register is Desktop only (use deploy for Xbox)")
     run([gdk_bin("wdapp.exe"), "register", ctx.layout_dir], ctx)
 
@@ -508,6 +544,8 @@ def cmd_deploy(ctx: Context) -> None:
 
 
 def cmd_launch(ctx: Context) -> None:
+    if not ctx.is_gdk:
+        raise Error("launch is GDK only (use run for win)")
     tool = gdk_bin("xbapp.exe" if ctx.is_xbox else "wdapp.exe")
     run([tool, "launch", aumid(ctx)], ctx)
 
@@ -532,7 +570,7 @@ COMMANDS = {
 def main() -> int:
     ap = argparse.ArgumentParser(description="krkrz GDK build tool")
     ap.add_argument("--project", help="project folder containing gdk-config.json (default: $PROJECT_DIR or krkrz_gdk)")
-    ap.add_argument("--target", choices=list(TARGETS), help="desktop / scarlett / xboxone (default: first of targets)")
+    ap.add_argument("--target", choices=list(TARGETS), help="desktop / scarlett / xboxone / win (default: first of targets)")
     ap.add_argument("--config", default="Release", choices=["Debug", "Release"])
     ap.add_argument("commands", nargs="+", choices=list(COMMANDS) + ["all"])
     args = ap.parse_args()

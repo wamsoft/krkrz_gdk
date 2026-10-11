@@ -1,16 +1,18 @@
 # krkrz_gdk
 
-吉里吉里Z (krkrz) を Microsoft GDK 向けにビルド・パッケージ化するための外枠リポジトリです。
+吉里吉里Z (krkrz) を **Microsoft GDK (PC / Xbox) 向けにビルド・パッケージ化する**ための外枠リポジトリです。
+SDL3 ベースで、プラグインは全て静的リンクします。
 
 | ターゲット | platform | 状況 |
 |---|---|---|
-| `desktop` | Gaming.Desktop.x64 (PC / Microsoft Store) | ビルド・起動確認済み |
-| `scarlett` | Gaming.Xbox.Scarlett.x64 (Xbox Series X\|S) | devkit で起動・パッド入力・セーブ・Canvas (D3D12) を確認済み |
+| `desktop` | Gaming.Desktop.x64 (PC / Microsoft Store) | ビルド・起動、msixvc のインストールとセーブを確認済み |
+| `scarlett` | Gaming.Xbox.Scarlett.x64 (Xbox Series X\|S) | devkit で起動・パッド入力・セーブ・Canvas (D3D12)・動画を確認済み |
 | `xboxone` | Gaming.Xbox.XboxOne.x64 (Xbox One) | Xbox Series devkit (互換動作) で起動を確認。Xbox One 実機は未確認 |
 
 エンジン本体は持たず、隣に置いた [krkrz_dev](https://github.com/wamsoft/krkrz_dev) (**master**) を参照します。
 案件ごとの設定と資材は案件フォルダ (`PROJECT_DIR`) に置き、出力も案件フォルダに出します。
-構成は krkrz_android / krkrz_web / krkrz_ios / krkrz_linux と同じ考え方です。
+構成は krkrz_android / krkrz_web / krkrz_ios / krkrz_linux と同じ外枠方式です (このリポジトリは「ガワ」のみ。
+エンジン本体・プラグインには手を入れず、GDK 固有のビルド定義・パッケージングだけを持ちます)。
 
 ```
 KRKRZ_BASE/
@@ -22,7 +24,8 @@ PROJECT_DIR/     案件フォルダ: gdk-config.json + 資材。出力は PROJEC
 ## 必要なもの
 
 - Visual Studio 2022 (C++ / CMake) と Microsoft GDK (VS 統合済みのエディション。既定 `250404`)
-  - Xbox ターゲットは GDKX (Xbox 拡張) も必要
+  - Xbox ターゲットは GDKX (Xbox 拡張) と devkit も必要 (Microsoft との開発者契約が要ります)
+  - Xbox ターゲットは Canvas のシェーダー変換に Vulkan SDK (glslangValidator / spirv-cross) も使います
 - vcpkg (`VCPKG_ROOT`)
 - Python 3.9 以降 (標準ライブラリのみ使用)
 - git (configure 時に SDL3 などを取得するためネットワークが必要)
@@ -145,27 +148,54 @@ core の既定 (exe 隣の `savedata`) は、インストールしたパッケ�
 Roaming AppData (`%APPDATA%\<orgName>\<appName>\`) に保存します。
 `$(personalpath)` / `$(savedgamespath)` / `$(exepath)` も使えます。
 
-## Xbox ターゲットの構成
+## Xbox で動かす
 
-- Application は core の stdapp.cpp ではなく [src/gdkapp.cpp](src/gdkapp.cpp) を使います (`KRKRZ_APP_PLATFORM_OVERRIDE`)
-- エンジンリソース (config.cf / messages.json / フォント) は exe に埋め込まず layout の `resource/` に置きます
-  (`KRKRZ_RESOURCE_EXTERNAL`)。`resourceDir` 未指定時は core 同梱のリソース一式 (同梱フォント含む) を使います
+```bash
+python tools/krkrz_gdk.py --project /path/to/game --target scarlett build stage deploy launch
+```
+
+`deploy` / `launch` は GDK の `xbapp` で、既定の devkit (`xbconnect` で設定) に layout を送って起動します。
+ログは `xbdbgmon /t`、画面は `xbcapture` で取れます。手順と注意は [docs/xbox.md](docs/xbox.md) にまとめています。
+
+Desktop との主な違い:
+
+- Application は core の stdapp.cpp ではなく [src/gdkapp.cpp](src/gdkapp.cpp) を使います
+- エンジンリソース (config.cf / messages.json / フォント) は exe に埋め込まず layout の `resource/` に置きます。
+  `resourceDir` 未指定時は core 同梱のリソース一式 (同梱フォント含む) を使います
+- 起動オプションは `<exe>.cf` ではなく `config.cf` に書きます。機種別は `config_xbox.cf` / `config_scarlett.cf` /
+  `config_xboxone.cf` (`System.platformTag`)
 - 画面は 1920x1080 の論理面に固定し、実画面に合わせて拡大表示します
-- セーブ (`System.dataPath`):
-  - `identity.scid` があれば XGameSaveFiles (SDL の user storage。クラウド同期される)。MicrosoftGame.config に
-    `SaveGameStorage/SCID`、`config.cf` に `scid=` を出力します
-  - 無ければ PersistentLocalStorage の下の `savedata/` (本体ローカルのみ。開発用)
-- テンポラリは PersistentLocalStorage の下の `tmp/`
-- OpenGL は無いので Canvas は SDL_GPU 版 (`KRKRZ_CANVAS_GPU`) で、D3D12 用のシェーダー (DXIL) を使う。
-  `stage` が Canvas の組み込みシェーダーとスクリプトの ShaderProgram (`gpuShaderDir`) を GXDK の機種向け dxc
-  (`GXDK/bin/<Scarlett|XboxOne>/dxc.exe`) で事前コンパイルし、`canvas_shaders.kzgs` として exe の隣に置く
-  (実行時の再コンパイルが要らない。エンジン内蔵の汎用 DXIL より優先される)
-  (dxc / spirv-cross / glslangValidator が要る。Vulkan SDK の Bin か PATH)。D3D12 には点の大きさが無いので、
-  `gl_PointSize` を書くシェーダーは点を四角形に広げて描く (変換時に書き換え、エンジンがインスタンス描画する。
-  `gl_PointCoord` も効く)。インデックス付きの点の描画は点のまま
-- console REPL / LogCore / DAP / 読み上げ (AccessKit) / OpenMP は無効。REPL は `-replweb` のみ
-- vcpkg の freetype は UWP 用パッチを外した overlay port を使います ([vcpkg-ports/](vcpkg-ports/README.md))
-- `config_xbox.cf` / `config_scarlett.cf` / `config_xboxone.cf` で機種別の起動オプションを書けます (System.platformTag)
+- セーブ (`System.dataPath`) は `identity.scid` があれば XGameSaveFiles (クラウド同期)、無ければ
+  PersistentLocalStorage の下の `savedata/` (開発用)
+- 描画は SDL_GPU (D3D12)。Canvas のシェーダーは `stage` が GXDK の dxc で事前コンパイルして同梱します
+
+## 機能の対応状況
+
+| 機能 | Desktop | Xbox |
+|---|---|---|
+| 起動・全画面表示 | ○ | ○ (1920x1080 論理面) |
+| パッド入力 | ○ | ○ |
+| セーブ (`System.dataPath`) | ○ `%APPDATA%\<orgName>\<appName>\` | ○ XGameSaveFiles (SCID 指定時) / PersistentLocalStorage |
+| 描画 | OpenGL (既定) | SDL_GPU (D3D12) |
+| Canvas / ShaderProgram | ○ OpenGL 版 | ○ SDL_GPU 版。シェーダーは事前変換したものだけ (`gpuShaderDir`)。点スプライトは四角形で代用 |
+| 動画 (VideoOverlay) | WebM / MPEG-1 | WebM / MPEG-1 (YUV)。overlay 系の `setPos` / `setSize` は効かず画面全体に出る (SDL 版共通の制限) |
+| Elements ダイアログ | ○ | ○ |
+| 静的プラグイン | ○ | ○ |
+| REPL | ○ console / `-replfile` / `-replweb` | `-replweb` のみ (devkit 越しの利用は未確認) |
+| 読み上げ (AccessKit) / LogCore | ○ | × |
+
+既知の制限と未確認の項目は [docs/xbox.md](docs/xbox.md#既知の制限未確認) を見てください。
+
+## ドキュメント
+
+| ドキュメント | 内容 |
+|---|---|
+| [docs/design.md](docs/design.md) | 構成 (3 層分離 / ビルドの流れ / Xbox で core に渡すオプション / SDL fork の変更点 / vcpkg) |
+| [docs/xbox.md](docs/xbox.md) | devkit での運用、セーブ、シェーダーの事前コンパイル、実機で分かったこと、既知の制限 |
+| [vcpkg-ports/README.md](vcpkg-ports/README.md) | vcpkg の overlay port (freetype) |
+| [plugins/README.md](plugins/README.md) | GDK 専用プラグイン置き場 |
+| 本体 [PlatformPorting.md](https://github.com/wamsoft/krkrz/blob/master/doc/PlatformPorting.md) | 外枠から本体を組み込む口 (共通) |
+| 本体 [CanvasGPU.md](https://github.com/wamsoft/krkrz/blob/master/doc/CanvasGPU.md) | Canvas の SDL_GPU 版 / シェーダー変換 (DXIL を含む) |
 
 ## ライセンス
 

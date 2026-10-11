@@ -176,7 +176,8 @@ krkrz_gdk/
 - セーブ: SDL_GetPrefPath (XGameSaveFiles) は SCID のヒント (SDL_GDK_SERVICE_CONFIGURATION_ID) が無いと
   失敗し、user:// への書き込みはメモリ上だけで消える。SCID 指定時は XGameSaveFiles、無ければ
   PersistentLocalStorage/savedata/ を System.dataPath にする (devkit で再起動後の読み戻しを確認)。
-  起動時に "Data path does not exist ... failed" が出るが書き込みは成功している (SDL_GetPathInfo の判定。要調査)。
+  InitDataPath は OS のネイティブパス (R:\savedata\) で返す (file:// で返すと起動時の存在確認が失敗して
+  "Data path does not exist ... failed" が出ていた)。PersistentLocalStorage のセーブは再デプロイ後も残る。
 - Desktop: core の既定 dataPath は exe 隣の savedata で、インストールしたパッケージ (WindowsApps) では書けない。
   gen が .cf に datapath="$(appdatapath)/<org>/<app>" を出力するようにした。wdapp install した msixvc で
   再起動後の読み戻しを確認 (GDK のデスクトップパッケージは AppData が仮想化されず実フォルダに書かれる)。

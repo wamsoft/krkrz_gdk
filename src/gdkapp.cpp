@@ -160,11 +160,9 @@ const tjs_string &GDKApplication::InitDataPath()
 		path += "savedata\\";
 		std::error_code ec;
 		std::filesystem::create_directories(std::filesystem::u8path(path), ec);
-		tjs_string w;
-		TVPUtf8ToUtf16(w, path);
-		std::replace(w.begin(), w.end(), TJS_W('\\'), TJS_W('/'));
-		SDL_NormalizeStorageName(w);
-		_DataPath = w;
+		// デスクトップ (ApplicationSpecialPath) と同じく OS のネイティブパスで返す。
+		// 呼び出し側 (TVPNativeDataPath) はそのまま存在確認に使い、System.dataPath は正規化して出す
+		TVPUtf8ToUtf16(_DataPath, path);
 		TVPLOG_INFO("save data: PersistentLocalStorage ({})", path);
 	} else {
 		TVPLOG_ERROR("save data: no SCID (scid=) and no PersistentLocalStorage; saves will not persist");

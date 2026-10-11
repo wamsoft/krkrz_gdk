@@ -5,7 +5,7 @@
 | ターゲット | platform | 状況 |
 |---|---|---|
 | `desktop` | Gaming.Desktop.x64 (PC / Microsoft Store) | ビルド・起動確認済み |
-| `scarlett` | Gaming.Xbox.Scarlett.x64 (Xbox Series X\|S) | devkit で起動・パッド入力・セーブを確認済み (Canvas の GPU シェーダは未対応) |
+| `scarlett` | Gaming.Xbox.Scarlett.x64 (Xbox Series X\|S) | devkit で起動・パッド入力・セーブ・Canvas (D3D12) を確認済み |
 | `xboxone` | Gaming.Xbox.XboxOne.x64 (Xbox One) | Xbox Series devkit (互換動作) で起動を確認。Xbox One 実機は未確認 |
 
 エンジン本体は持たず、隣に置いた [krkrz_dev](https://github.com/wamsoft/krkrz_dev) (**master**) を参照します。
@@ -93,6 +93,7 @@ PROJECT_DIR/build/gdk/
 | `shellVisuals` | `publisherDisplayName` / `description` / `foregroundText` / `backgroundColor` |
 | `logoDir` | `Logo44x44.png` / `Logo100x100.png` / `Logo150x150.png` / `Logo480x480.png` / `SplashScreenImage.png` を置いたフォルダ。無いものは placeholder を生成 |
 | `icon` | exe に埋め込む .ico (`KRKRZ_WIN_ICON`) |
+| `gpuShaderDir` | Canvas の ShaderProgram 用シェーダー (実行時に `-gpushadercollect` で書き出した `<key>.vs` / `<key>.fs` の組) のフォルダ。Xbox では `stage` が D3D12 用 (DXIL) の `canvas_shaders.kzgs` にして exe の隣に置く |
 | `resourceDir` | エンジン埋め込みリソース (config.cf / messages.json / フォント) の差し替え (`KRKRZ_RESOURCE_DIR`) |
 | `dataPath` | Desktop のセーブ先 (`<exe>.cf` の `datapath`)。既定 `$(appdatapath)/<orgName>/<appName>`。区切りは `/` |
 | `config.options` | `<exe>.cf` に追記する起動オプション (`datapath=` を書くと `dataPath` より優先) |
@@ -155,7 +156,10 @@ Roaming AppData (`%APPDATA%\<orgName>\<appName>\`) に保存します。
     `SaveGameStorage/SCID`、`<exe>.cf` に `scid=` を出力します
   - 無ければ PersistentLocalStorage の下の `savedata/` (本体ローカルのみ。開発用)
 - テンポラリは PersistentLocalStorage の下の `tmp/`
-- OpenGL は無いので Canvas は SDL_GPU 版 (`KRKRZ_CANVAS_GPU`)。D3D12 用シェーダ (DXIL) は未対応
+- OpenGL は無いので Canvas は SDL_GPU 版 (`KRKRZ_CANVAS_GPU`) で、D3D12 用のシェーダー (DXIL) を使う。
+  Canvas 自身の組み込みシェーダーはエンジンに入っている。スクリプトの ShaderProgram は `gpuShaderDir` から変換する
+  (dxc / spirv-cross / glslangValidator が要る。Vulkan SDK の Bin か PATH)。D3D12 には点の大きさが無いので
+  `gl_PointSize` は効かない (点は 1 ピクセル)
 - console REPL / LogCore / DAP / 読み上げ (AccessKit) / OpenMP は無効。REPL は `-replweb` のみ
 - vcpkg の freetype は UWP 用パッチを外した overlay port を使います ([vcpkg-ports/](vcpkg-ports/README.md))
 - `config_xbox.cf` / `config_scarlett.cf` / `config_xboxone.cf` で機種別の起動オプションを書けます (System.platformTag)

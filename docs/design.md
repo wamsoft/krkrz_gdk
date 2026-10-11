@@ -197,6 +197,12 @@ krkrz_gdk/
   バッファ→テクスチャ転送の行ピッチを 256 (D3D12_TEXTURE_DATA_PITCH_ALIGNMENT) で揃えていたが、Xbox One は 1024
   (D3D12XBOX_TEXTURE_DATA_PITCH_ALIGNMENT) が必要。SDL fork で修正 (上流 main も未修正)。Scarlett は 256 なので影響なし。
 
+- Canvas の D3D12 対応: core の gpushaderc.py に --target dxil (SPIR-V → spirv-cross HLSL SM6.0 → dxc)、
+  パック形式 DXIL、組み込みシェーダーの DXIL 版を追加。GLSL の書き換えで決めている set 番号が、そのまま SDL_GPU の
+  D3D12 の register space になる。DXIL は Xbox と -gpudriver=direct3d12 のときだけ要求する (SDL は D3D12 を
+  Vulkan より先に試すため)。devkit で GPU パーティクルが動作 (点は 1 ピクセル)。Xbox 用の事前コンパイル
+  (Runtime Recompilation の警告を消す) は未対応。
+
 ## 11. 事前検証で分かっていること
 
 - toolchain ファイルは使わず VS generator の platform 名 (`Gaming.*`) で GDK MSBuild 拡張を使う。
@@ -215,7 +221,7 @@ krkrz_gdk/
 |---|---|---|
 | P0 | 外枠骨格 (完了) | gdk-desktop でコアデモが layout から起動 (確認済み) |
 | P1 | gen / stage / package (完了)、wdapp register / launch (未検証) | 案件フォルダから msixvc が作れる (サンプルで確認済み) |
-| P2 | Scarlett: ビルド・起動 (完了)。全画面表示・セーブ往復・パッド入力 (完了)。残り: GPU canvas の DXIL シェーダ | devkit でコアデモ起動 (確認済み) |
+| P2 | Scarlett: ビルド・起動 (完了)。全画面表示・セーブ往復・パッド入力・Canvas の D3D12 (DXIL) シェーダ (完了) | devkit でコアデモ起動 (確認済み) |
 | P3 | XboxOne (ビルド・パッケージ作成まで完了)、パッケージ chunk 分割、実績等の GDK 専用プラグイン | 必要に応じて |
 
 ## 13. 公開リポジトリとしての注意

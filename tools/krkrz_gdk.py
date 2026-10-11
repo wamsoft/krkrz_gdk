@@ -354,10 +354,33 @@ def cmd_stage(ctx: Context) -> None:
         else:
             res = ctx.krkrz_base / "krkrz_dev/src/core/resource"
         stage.collect(mapping, res, "resource")
+        pack = build_gpu_shader_pack(ctx)
+        if pack:
+            stage.collect(mapping, pack, "", "flatten")
+            mapping["canvas_shaders.kzgs"] = ("canvas_shaders.kzgs", mapping.pop(pack.name.lower())[1])
     ap = ctx.cfg.get("assetPack")
     if ap:
         stage.collect_asset_pack(mapping, ap, ctx.vars, ctx.project_dir)
     stage.sync(mapping, ctx.layout_dir, (ap or {}).get("transfer", "copy"))
+
+
+def build_gpu_shader_pack(ctx: Context) -> Path | None:
+    """gpuShaderDir (実行時に -gpushadercollect で書き出した <key>.vs / <key>.fs の組) を
+    D3D12 用 (DXIL) のパックにする。エンジンは exe 隣の canvas_shaders.kzgs を読む。
+    組み込みシェーダー (Canvas 自身が使うもの) はエンジンに入っているので不要"""
+    if not ctx.cfg.get("gpuShaderDir"):
+        return None
+    src = ctx.path(ctx.cfg["gpuShaderDir"])
+    if not src.is_dir():
+        raise Error(f"gpuShaderDir not found: {src}")
+    tool = ctx.krkrz_base / "krkrz_dev/src/core/common/visual/gpu/gpushaderc.py"
+    out = ctx.generated_dir / f"canvas_shaders.{ctx.target}.kzgs"
+    newest = max((p.stat().st_mtime for p in src.iterdir() if p.suffix in (".vs", ".fs")), default=0)
+    if out.exists() and out.stat().st_mtime >= max(newest, tool.stat().st_mtime):
+        return out
+    print(f"  gpushaderc: {src} -> {out.name} (dxil)")
+    run([sys.executable, tool, "pack", "--target", "dxil", "-o", out, src])
+    return out
 
 
 def write_package_layout(ctx: Context) -> Path:

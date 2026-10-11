@@ -173,6 +173,13 @@ krkrz_gdk/
 - 全画面表示: core の常時フルスクリーン環境 (1920x1080 論理面 + SDL_SetRenderLogicalPresentation) に
   SDL_PLATFORM_XBOXONE / XBOXSERIES を追加して対応。
 
+- セーブ: SDL_GetPrefPath (XGameSaveFiles) は SCID のヒント (SDL_GDK_SERVICE_CONFIGURATION_ID) が無いと
+  失敗し、user:// への書き込みはメモリ上だけで消える。SCID 指定時は XGameSaveFiles、無ければ
+  PersistentLocalStorage/savedata/ を System.dataPath にする (devkit で再起動後の読み戻しを確認)。
+  起動時に "Data path does not exist ... failed" が出るが書き込みは成功している (SDL_GetPathInfo の判定。要調査)。
+- Desktop: 既定の dataPath は exe 隣の savedata (stdapp.cpp)。インストールしたパッケージでは exe のフォルダが
+  読み取り専用なので、.cf の datapath で $(appdatapath) 等を指定する必要がある (未対応)。
+
 ## 11. 事前検証で分かっていること
 
 - toolchain ファイルは使わず VS generator の platform 名 (`Gaming.*`) で GDK MSBuild 拡張を使う。
@@ -191,7 +198,7 @@ krkrz_gdk/
 |---|---|---|
 | P0 | 外枠骨格 (完了) | gdk-desktop でコアデモが layout から起動 (確認済み) |
 | P1 | gen / stage / package (完了)、wdapp register / launch (未検証) | 案件フォルダから msixvc が作れる (サンプルで確認済み) |
-| P2 | Scarlett: ビルド・起動 (完了)。全画面表示 (完了)。残り: パッド入力・セーブ往復の確認、GPU canvas の DXIL シェーダ | devkit でコアデモ起動 (確認済み) |
+| P2 | Scarlett: ビルド・起動 (完了)。全画面表示・セーブ往復 (完了)。残り: パッド入力の確認、GPU canvas の DXIL シェーダ | devkit でコアデモ起動 (確認済み) |
 | P3 | XboxOne、パッケージ chunk 分割、実績等の GDK 専用プラグイン | 必要に応じて |
 
 ## 13. 公開リポジトリとしての注意

@@ -14,7 +14,7 @@
 @DESKTOP_REGISTRATION@
 	<MSAAppId>@MSA_APP_ID@</MSAAppId>
 	<TitleId>@TITLE_ID@</TitleId>
-@STORE_ID@
+@STORE_ID@@STORAGE@
 	<ShellVisuals DefaultDisplayName="@DISPLAY_NAME@"
 					PublisherDisplayName="@PUBLISHER_DISPLAY_NAME@"
 					Square480x480Logo="Logo480x480.png"

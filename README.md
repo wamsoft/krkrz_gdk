@@ -89,7 +89,7 @@ PROJECT_DIR/build/gdk/
 | `exeName` | 実行ファイル名 (拡張子なし) |
 | `orgName` / `appName` | `<exe>.cf` に書く orgname / appname (セーブ先の識別) |
 | `targets` | 対象ターゲット。先頭が `--target` 省略時の既定 |
-| `identity` | `name` / `publisher` / `titleId` / `msaAppId` / `storeId` (Partner Center の値。実値は案件側にだけ置く) |
+| `identity` | `name` / `publisher` / `titleId` / `msaAppId` / `storeId` / `scid` (Partner Center の値。実値は案件側にだけ置く) |
 | `shellVisuals` | `publisherDisplayName` / `description` / `foregroundText` / `backgroundColor` |
 | `logoDir` | `Logo44x44.png` / `Logo100x100.png` / `Logo150x150.png` / `Logo480x480.png` / `SplashScreenImage.png` を置いたフォルダ。無いものは placeholder を生成 |
 | `icon` | exe に埋め込む .ico (`KRKRZ_WIN_ICON`) |
@@ -99,6 +99,7 @@ PROJECT_DIR/build/gdk/
 | `cmake.options` | configure に渡す追加の `-D` |
 | `assetPack` | 資材の配置 (下記) |
 | `gdk.edition` | `XdkEditionTarget` (環境変数が優先。既定 `250404`) |
+| `gdk.persistentLocalStorageMB` | MicrosoftGame.config の PersistentLocalStorage サイズ (既定 256。0 で出力しない) |
 | `buildDir` | 出力ルート (既定 `${PROJECT_DIR}/build/gdk`) |
 
 `${PROJECT_DIR}` / `${BUILD_SYSTEM_DIR}` / `${KRKRZ_BASE}` と環境変数を展開します。相対パスは PROJECT_DIR 基準です。
@@ -142,7 +143,11 @@ FetchContent で固定して使います。ローカルの clone を使うとき
 - エンジンリソース (config.cf / messages.json / フォント) は exe に埋め込まず layout の `resource/` に置きます
   (`KRKRZ_RESOURCE_EXTERNAL`)。`resourceDir` 未指定時は core 同梱のリソース一式 (同梱フォント含む) を使います
 - 画面は 1920x1080 の論理面に固定し、実画面に合わせて拡大表示します
-- セーブは `user://` (SDL storage → XGameSaveFiles)。テンポラリは PersistentLocalStorage があればその下の `tmp/`
+- セーブ (`System.dataPath`):
+  - `identity.scid` があれば XGameSaveFiles (SDL の user storage。クラウド同期される)。MicrosoftGame.config に
+    `SaveGameStorage/SCID`、`<exe>.cf` に `scid=` を出力します
+  - 無ければ PersistentLocalStorage の下の `savedata/` (本体ローカルのみ。開発用)
+- テンポラリは PersistentLocalStorage の下の `tmp/`
 - OpenGL は無いので Canvas は SDL_GPU 版 (`KRKRZ_CANVAS_GPU`)。D3D12 用シェーダ (DXIL) は未対応
 - console REPL / LogCore / DAP / 読み上げ (AccessKit) / OpenMP は無効。REPL は `-replweb` のみ
 - vcpkg の freetype は UWP 用パッチを外した overlay port を使います ([vcpkg-ports/](vcpkg-ports/README.md))

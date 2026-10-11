@@ -14,6 +14,7 @@
 
 #include "app.h"
 #include "ExecutableOverlay.h"
+#include "SysInitIntf.h"
 
 #include <XPersistentLocalStorage.h>
 
@@ -74,6 +75,7 @@ public:
 	virtual ~GDKApplication() {}
 	virtual bool InitPath() override;
 	virtual const tjs_string &TempPath() const override;
+	virtual const tjs_string &InitDataPath() override;
 
 protected:
 	virtual const char *getPlatformTagSpec() const override;
@@ -129,6 +131,45 @@ bool GDKApplication::InitPath()
 		TVPLOG_INFO("resourcePath: {}", r);
 	}
 	return true;
+}
+
+// セーブデータの置き場所 (System.dataPath)。
+// - SCID (Partner Center のサービス構成 ID) が .cf の scid= で指定されていれば、
+//   SDL の user storage (SDL_GetPrefPath = XGameSaveFiles) を使う。クラウド同期される
+// - 無ければ (開発中など) PersistentLocalStorage の下の savedata/ を使う。
+//   本体ローカルのみ。MicrosoftGame.config の PersistentLocalStorage が必要
+const tjs_string &GDKApplication::InitDataPath()
+{
+	tTJSVariant val;
+	if (TVPGetCommandLine(TJS_W("-scid"), &val)) {
+		std::string scid;
+		TVPUtf16ToUtf8(scid, ((ttstr)val).AsStdString());
+		SDL_SetHint("SDL_GDK_SERVICE_CONFIGURATION_ID", scid.c_str());
+		TVPLOG_INFO("save data: XGameSaveFiles (scid={})", scid);
+		return SDL3Application::InitDataPath();
+	}
+
+	// user:// (SDL storage) の初期化は基底に任せる (SCID 無しでは使えない)
+	SDL3Application::InitDataPath();
+
+	char buf[1024];
+	size_t used = 0;
+	if (SUCCEEDED(XPersistentLocalStorageGetPath(sizeof(buf), buf, &used)) && used > 0) {
+		std::string path = buf;
+		CheckLastDelimiter(path);
+		path += "savedata\\";
+		std::error_code ec;
+		std::filesystem::create_directories(std::filesystem::u8path(path), ec);
+		tjs_string w;
+		TVPUtf8ToUtf16(w, path);
+		std::replace(w.begin(), w.end(), TJS_W('\\'), TJS_W('/'));
+		SDL_NormalizeStorageName(w);
+		_DataPath = w;
+		TVPLOG_INFO("save data: PersistentLocalStorage ({})", path);
+	} else {
+		TVPLOG_ERROR("save data: no SCID (scid=) and no PersistentLocalStorage; saves will not persist");
+	}
+	return _DataPath;
 }
 
 // テンポラリ領域。パッケージのフォルダは読み取り専用なので、

@@ -192,6 +192,10 @@ def cmd_gen(ctx: Context) -> None:
         cf.append(f'orgname="{cfg["orgName"]}"')
     if cfg.get("appName"):
         cf.append(f'appname="{cfg["appName"]}"')
+    scid = cfg.get("identity", {}).get("scid", "")
+    if scid:
+        # Xbox: SDL_GetPrefPath (XGameSaveFiles) に渡す SCID。src/gdkapp.cpp が読む
+        cf.append(f'scid="{scid}"')
     cf += cfg.get("config", {}).get("options", [])
     write_if_changed(gen / f"{ctx.exe_name}.cf", "\n".join(cf) + "\n")
 
@@ -222,7 +226,19 @@ def cmd_gen(ctx: Context) -> None:
         text = tmpl
         for k, v in values.items():
             text = text.replace(f"@{k}@", xml_escape(str(v), {'"': "&quot;"}))
+        # セーブ: SCID があれば XGameSave、無ければ PersistentLocalStorage を使う (src/gdkapp.cpp)
+        storage = ""
+        pls_mb = int(cfg.get("gdk", {}).get("persistentLocalStorageMB", 256))
+        if pls_mb > 0:
+            storage += ("\t<PersistentLocalStorage>\n"
+                        f"\t\t<SizeMB>{pls_mb}</SizeMB>\n"
+                        "\t</PersistentLocalStorage>\n")
+        if scid:
+            storage += ("\t<SaveGameStorage>\n"
+                        f"\t\t<SCID>{xml_escape(scid)}</SCID>\n"
+                        "\t</SaveGameStorage>\n")
         text = text.replace("@DESKTOP_REGISTRATION@", desktop_reg).replace("@STORE_ID@", store_id)
+        text = text.replace("@STORAGE@", storage)
         write_if_changed(gen / f"MicrosoftGame.{name}.config", text)
 
     # ロゴ (案件の logoDir に同名ファイルがあればそれ、無ければ placeholder)

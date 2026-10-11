@@ -364,22 +364,62 @@ def cmd_stage(ctx: Context) -> None:
     stage.sync(mapping, ctx.layout_dir, (ap or {}).get("transfer", "copy"))
 
 
-def build_gpu_shader_pack(ctx: Context) -> Path | None:
-    """gpuShaderDir (実行時に -gpushadercollect で書き出した <key>.vs / <key>.fs の組) を
-    D3D12 用 (DXIL) のパックにする。エンジンは exe 隣の canvas_shaders.kzgs を読む。
-    組み込みシェーダー (Canvas 自身が使うもの) はエンジンに入っているので不要"""
-    if not ctx.cfg.get("gpuShaderDir"):
+XBOX_DXC_DIR = {"scarlett": "Scarlett", "xboxone": "XboxOne"}
+
+
+def xbox_dxc(ctx: Context) -> Path | None:
+    """GXDK の機種向け dxc (事前コンパイル済みのコードを入れる)。無ければ None"""
+    gamedk = os.environ.get("GameDK")
+    sub = XBOX_DXC_DIR.get(ctx.target)
+    if not gamedk or not sub:
         return None
-    src = ctx.path(ctx.cfg["gpuShaderDir"])
-    if not src.is_dir():
-        raise Error(f"gpuShaderDir not found: {src}")
-    tool = ctx.krkrz_base / "krkrz_dev/src/core/common/visual/gpu/gpushaderc.py"
+    p = Path(gamedk) / ctx.edition / "GXDK" / "bin" / sub / "dxc.exe"
+    return p if p.exists() else None
+
+
+def build_gpu_shader_pack(ctx: Context) -> Path | None:
+    """Canvas (SDL_GPU / D3D12) 用のシェーダーパック canvas_shaders.kzgs を作る。
+    エンジンは exe 隣のものを読み、同じシェーダーはエンジン内蔵のものより優先する。
+
+    - 組み込みシェーダー (Canvas 自身が使うもの、core の shaders/builtin.json)
+    - gpuShaderDir (実行時に -gpushadercollect で書き出した <key>.vs / <key>.fs の組)
+
+    を GXDK の機種向け dxc で DXIL にする。機種向けの dxc は事前コンパイル済みのコードを
+    入れるので、実行時の再コンパイル (XBSC W1003) が要らなくなる。dxc が無ければ
+    gpuShaderDir があるときだけ汎用の dxc で作る (組み込みはエンジン内蔵の汎用 DXIL)"""
+    gpu = ctx.krkrz_base / "krkrz_dev/src/core/common/visual/gpu"
+    tool = gpu / "gpushaderc.py"
+    dxc = xbox_dxc(ctx)
+    inputs: list[Path] = []
+    if dxc:
+        inputs.append(gpu / "shaders/builtin.json")
+    if ctx.cfg.get("gpuShaderDir"):
+        src = ctx.path(ctx.cfg["gpuShaderDir"])
+        if not src.is_dir():
+            raise Error(f"gpuShaderDir not found: {src}")
+        inputs.append(src)
+    if not inputs:
+        return None
+    if not dxc:
+        print("  warning: GXDK dxc not found; shaders are generic DXIL (recompiled at runtime)")
+
     out = ctx.generated_dir / f"canvas_shaders.{ctx.target}.kzgs"
-    newest = max((p.stat().st_mtime for p in src.iterdir() if p.suffix in (".vs", ".fs")), default=0)
-    if out.exists() and out.stat().st_mtime >= max(newest, tool.stat().st_mtime):
+    stamp = out.with_suffix(".inputs")
+    key = "\n".join([str(dxc or "")] + [str(p) for p in inputs])
+    deps = [tool]
+    for p in inputs:
+        deps += list(p.parent.glob("*")) if p.is_file() else list(p.iterdir())
+    newest = max((p.stat().st_mtime for p in deps if p.is_file()), default=0)
+    if (out.exists() and stamp.exists() and stamp.read_text(encoding="utf-8") == key
+            and out.stat().st_mtime >= newest):
         return out
-    print(f"  gpushaderc: {src} -> {out.name} (dxil)")
-    run([sys.executable, tool, "pack", "--target", "dxil", "-o", out, src])
+    print(f"  gpushaderc: {', '.join(p.name for p in inputs)} -> {out.name} "
+          f"(dxil, {'precompiled for ' + ctx.target if dxc else 'generic'})")
+    cmd = [sys.executable, tool, "pack", "--target", "dxil", "-o", out]
+    if dxc:
+        cmd += ["--dxc", dxc]
+    run(cmd + inputs)
+    stamp.write_text(key, encoding="utf-8")
     return out
 
 

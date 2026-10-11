@@ -93,7 +93,7 @@ PROJECT_DIR/build/gdk/
 | `shellVisuals` | `publisherDisplayName` / `description` / `foregroundText` / `backgroundColor` |
 | `logoDir` | `Logo44x44.png` / `Logo100x100.png` / `Logo150x150.png` / `Logo480x480.png` / `SplashScreenImage.png` を置いたフォルダ。無いものは placeholder を生成 |
 | `icon` | exe に埋め込む .ico (`KRKRZ_WIN_ICON`) |
-| `gpuShaderDir` | Canvas の ShaderProgram 用シェーダー (実行時に `-gpushadercollect` で書き出した `<key>.vs` / `<key>.fs` の組) のフォルダ。Xbox では `stage` が D3D12 用 (DXIL) の `canvas_shaders.kzgs` にして exe の隣に置く |
+| `gpuShaderDir` | Canvas の ShaderProgram 用シェーダー (実行時に `-gpushadercollect` で書き出した `<key>.vs` / `<key>.fs` の組) のフォルダ。Xbox では `stage` が Canvas の組み込みシェーダーと合わせて D3D12 用 (DXIL) の `canvas_shaders.kzgs` にして exe の隣に置く |
 | `resourceDir` | エンジン埋め込みリソース (config.cf / messages.json / フォント) の差し替え (`KRKRZ_RESOURCE_DIR`) |
 | `dataPath` | Desktop のセーブ先 (`<exe>.cf` の `datapath`)。既定 `$(appdatapath)/<orgName>/<appName>`。区切りは `/` |
 | `config.options` | `<exe>.cf` に追記する起動オプション (`datapath=` を書くと `dataPath` より優先) |
@@ -157,7 +157,9 @@ Roaming AppData (`%APPDATA%\<orgName>\<appName>\`) に保存します。
   - 無ければ PersistentLocalStorage の下の `savedata/` (本体ローカルのみ。開発用)
 - テンポラリは PersistentLocalStorage の下の `tmp/`
 - OpenGL は無いので Canvas は SDL_GPU 版 (`KRKRZ_CANVAS_GPU`) で、D3D12 用のシェーダー (DXIL) を使う。
-  Canvas 自身の組み込みシェーダーはエンジンに入っている。スクリプトの ShaderProgram は `gpuShaderDir` から変換する
+  `stage` が Canvas の組み込みシェーダーとスクリプトの ShaderProgram (`gpuShaderDir`) を GXDK の機種向け dxc
+  (`GXDKin\Scarlett|XboxOne\dxc.exe`) で事前コンパイルし、`canvas_shaders.kzgs` として exe の隣に置く
+  (実行時の再コンパイルが要らない。エンジン内蔵の汎用 DXIL より優先される)
   (dxc / spirv-cross / glslangValidator が要る。Vulkan SDK の Bin か PATH)。D3D12 には点の大きさが無いので、
   `gl_PointSize` を書くシェーダーは点を四角形に広げて描く (変換時に書き換え、エンジンがインスタンス描画する。
   `gl_PointCoord` も効く)。インデックス付きの点の描画は点のまま

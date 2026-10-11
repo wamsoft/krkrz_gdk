@@ -203,7 +203,12 @@ krkrz_gdk/
   Vulkan より先に試すため)。devkit で GPU パーティクルが動作。
   D3D12 には点の大きさが無いので、gl_PointSize を書く頂点シェーダーは DXIL 変換時に「点を四角形に広げる」形へ
   書き換え (角 _kz_corner / 画面サイズ _kz_viewport を追加)、エンジンが 4 頂点 × 点の数のインスタンス描画にする。
-  gl_PointCoord も角から求める。粒の大きさと丸いぼかしが PC と同じに出ることを確認。Xbox 用の事前コンパイル
+  gl_PointCoord も角から求める。粒の大きさと丸いぼかしが PC と同じに出ることを確認。
+- Xbox 向けの事前コンパイル: GXDK の bin/<機種>/dxc.exe で DXIL を作ると機種のコードが入る (SDL も自前の
+  D3D12 シェーダーを同じ方法で作っている)。事前コンパイルにはシェーダーにルートシグネチャが要るので、SDL_GPU が
+  パイプラインごとに作るものと同じ文字列を gpushaderc.py が組み立てて埋め込む。stage が組み込み + gpuShaderDir を
+  機種ごとにパックし exe の隣に置く。Canvas のシェーダーの XBSC W1003 (実行時の再コンパイル) は出なくなった。
+  起動直後に残る 3 件は SDL の GPU レンダラー (SDL_Renderer) 自身のシェーダーで、SDL 側の対応が要る (未対応)。Xbox 用の事前コンパイル
   (Runtime Recompilation の警告を消す) は未対応。
 
 ## 11. 事前検証で分かっていること

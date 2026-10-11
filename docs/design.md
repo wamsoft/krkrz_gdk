@@ -208,7 +208,10 @@ krkrz_gdk/
   D3D12 シェーダーを同じ方法で作っている)。事前コンパイルにはシェーダーにルートシグネチャが要るので、SDL_GPU が
   パイプラインごとに作るものと同じ文字列を gpushaderc.py が組み立てて埋め込む。stage が組み込み + gpuShaderDir を
   機種ごとにパックし exe の隣に置く。Canvas のシェーダーの XBSC W1003 (実行時の再コンパイル) は出なくなった。
-  起動直後に残る 3 件は SDL の GPU レンダラー (SDL_Renderer) 自身のシェーダーで、SDL 側の対応が要る (未対応)。Xbox 用の事前コンパイル
+  起動直後に残っていた 3 件は SDL の GPU レンダラー (SDL_Renderer) 自身のシェーダー。SDL fork で、ビルド時に GXDK の
+  dxc で事前コンパイルするようにした (ルートシグネチャを埋め込み、頂点入力を SDL の D3D12 の宣言どおり TEXCOORD<n> に
+  する)。コアデモのギャラリーと GPU パーティクルで XBSC W1003 は 0 件。tri_texture.vert は 1 テクスチャの組み合わせに
+  合わせたので、texture_advanced (YUV 動画など) と組む場合と線・点の描画 (linepoint) は未確認。Xbox 用の事前コンパイル
   (Runtime Recompilation の警告を消す) は未対応。
 
 ## 11. 事前検証で分かっていること

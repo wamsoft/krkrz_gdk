@@ -80,10 +80,10 @@ python tools/krkrz_gdk.py --project /path/to/game --target scarlett build stage 
 | Xbox One で Elements のダイアログを開くとクラッシュ | D3D12 の転送の行ピッチ (Xbox One は 1024) → SDL fork で修正 |
 | SDL レンダラーの事前コンパイル版で描画が落ちる | 頂点入力のセマンティクスが SDL の D3D12 の宣言 (`TEXCOORD<n>`) と違った → 入力を改名してコンパイル |
 | `config.options` が効かない | `<exe名>.cf` はデスクトップだけ → `config.cf` で置く |
+| エラーダイアログを Ⓐ で閉じられない (Ⓑ では閉じる) | `System.inform` / 未処理例外のダイアログの OK に初期フォーカスが無く、Ⓐ (Enter の合成) が空振りしていた → core で OK (confirm は「はい」) に初期フォーカス。devkit で Ⓐ 1 回で閉じることを確認 |
 
 ## 既知の制限・未確認
 
-- **エラーダイアログを Ⓐ で閉じられないことがある** (Ⓑ では閉じる)。ボタンにフォーカスが無い状態が疑わしい。未調査
 - **動画の再生矩形**: `vomOverlay` / `vomMixer` の `setPos` / `setSize` が効かず画面全体に出る (SDL 版共通の制限。
   本体側で実装予定 → 本体 `MovieMFMigration.md` 「SDL 版 overlay 動画の表示位置・大きさ」)
 - **インデックス付きの点の描画** (`drawMesh` に index を渡す点) は四角形化しておらず点のまま

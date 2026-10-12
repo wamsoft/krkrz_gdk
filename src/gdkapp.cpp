@@ -19,6 +19,7 @@
 #include <XPersistentLocalStorage.h>
 
 #include <algorithm>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 
@@ -63,6 +64,52 @@ tjs_string ModulePath()
 	const DWORD len = ::GetModuleFileNameW(NULL, buf, static_cast<DWORD>(std::size(buf)));
 	if (len > 0 && len < std::size(buf)) return tjs_string(reinterpret_cast<const tjs_char *>(buf));
 	return tjs_string();
+}
+
+// -gameinput=yes : マウス / キーボードを GameInput から読む (既定 no)。
+// SDL は SDL_HINT_WINDOWS_GAMEINPUT が立っているときだけ GameInput を初期化する。
+// Xbox では初期化時にマウス / キーボードとも読む設定になる (SDL fork の変更)。
+// マウスは相対移動で届き、SDL が積算してウィンドウ内に収めた位置を通常のマウスイベントとして出す。
+// Xbox には OS のカーソル表示が無いので、ポインタは見えない (ゲーム側で描く必要がある)。
+// GDK 250404 の GameInput (API バージョン 0) のマウス状態は相対移動の積算値だけなので、
+// 絶対座標で送られる入力 (devkit のリモート制御のマウス移動) は位置が取れない (クリックとキーは届く)。
+
+bool IsTrueValue(std::string v)
+{
+	std::transform(v.begin(), v.end(), v.begin(), [](unsigned char c) { return (char)std::tolower(c); });
+	return v == "yes" || v == "true" || v == "on" || v == "1";
+}
+
+// "name=value" / "-name=value" の行から name の値を取る (値の前後の " は外す)
+bool MatchOption(std::string line, const char *name, std::string &value)
+{
+	while (!line.empty() && (line.back() == '\r' || line.back() == '\n' || line.back() == ' ' || line.back() == '\t')) line.pop_back();
+	size_t i = 0;
+	while (i < line.size() && (line[i] == ' ' || line[i] == '\t')) i++;
+	if (i < line.size() && line[i] == '-') i++;
+	const size_t n = std::strlen(name);
+	if (line.compare(i, n, name) != 0 || i + n >= line.size() || line[i + n] != '=') return false;
+	value = line.substr(i + n + 1);
+	if (value.size() >= 2 && value.front() == '"' && value.back() == '"') value = value.substr(1, value.size() - 2);
+	return true;
+}
+
+// SDL_Init より前に要る起動オプションを読む。本体の起動オプション解決 (TVPGetCommandLine) は
+// まだ使えないので、コマンドライン → exe と同じ場所の config.cf の順に自前で探す
+bool ReadEarlyOption(int argc, char *argv[], const char *name, std::string &value)
+{
+	for (int i = 1; i < argc; i++) {
+		if (argv[i] && MatchOption(argv[i], name, value)) return true;
+	}
+	const char *base = SDL_GetBasePath();
+	if (!base) return false;
+	std::ifstream f(std::filesystem::u8path(std::string(base) + "config.cf"));
+	std::string line;
+	while (std::getline(f, line)) {
+		if (!line.empty() && line[0] == '[') break;   // [profile:..] 以降はプロファイル別
+		if (MatchOption(line, name, value)) return true;
+	}
+	return false;
 }
 
 } // namespace
@@ -209,9 +256,17 @@ const char *GDKApplication::getPlatformTagSpec() const
 #endif
 }
 
-// 機種別グローバル初期化処理 (XGameRuntime の初期化は SDL 側が行う)
+// 機種別グローバル初期化処理 (XGameRuntime の初期化は SDL 側が行う)。SDL_Init より前に呼ばれる
 void TVPAppInit(int argc, char *argv[])
 {
+	std::string v;
+	if (ReadEarlyOption(argc, argv, "gameinput", v) && IsTrueValue(v)) {
+		SDL_SetHint(SDL_HINT_WINDOWS_GAMEINPUT, "1");
+		// SDL は初期化の最後にこのヒントの値でキーボードの読み取りを設定し直す
+		// (未設定だと切られる) ので、明示的に立てておく
+		SDL_SetHint(SDL_HINT_WINDOWS_RAW_KEYBOARD, "1");
+		TVPLOG_INFO("GameInput: mouse / keyboard enabled (-gameinput)");
+	}
 }
 
 SDL3Application *GetSDL3Application()

@@ -118,7 +118,7 @@ set(KRKRZ_GDK_SDL_REPOSITORY "https://github.com/wamsoft/SDL.git" CACHE STRING "
 # Xbox One の D3D12 行ピッチ修正 + GPU レンダラーのシェーダーの Xbox 向け事前コンパイル)
 # CACHE にすると既存のビルドツリーが古い値を持ち続けるので、-D で指定されたときだけ上書きする
 if(NOT KRKRZ_GDK_SDL_GIT_TAG)
-    set(KRKRZ_GDK_SDL_GIT_TAG "21148fa59242be6e4fa858424d4b124f47fd6586")
+    set(KRKRZ_GDK_SDL_GIT_TAG "9286402bb5feeed2e6db68a1a3a743dc37e6cd96")
 endif()
 
 set(SDL_SHARED OFF CACHE BOOL "" FORCE)

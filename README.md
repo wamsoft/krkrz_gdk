@@ -199,6 +199,7 @@ Desktop との主な違い:
 |---|---|---|---|
 | 起動・全画面表示 | ○ | ○ | ○ (1920x1080 論理面) |
 | パッド入力 | ○ | ○ | ○ |
+| マウス / キーボード | ○ | ○ | △ `gameinput=yes` で GameInput から読む (既定 off)。リモート制御のマウス移動は取れない / USB マウスは未確認 / カーソルは表示されない |
 | セーブ (`System.dataPath`) | ○ `%APPDATA%\<orgName>\<appName>\` | ○ 同左 | ○ XGameSaveFiles (SCID 指定時) / PersistentLocalStorage |
 | 描画 | OpenGL (既定) | SDL_GPU (D3D12) | SDL_GPU (D3D12) |
 | Canvas / ShaderProgram | ○ OpenGL 版 | ○ SDL_GPU 版 | ○ SDL_GPU 版 |

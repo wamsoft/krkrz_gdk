@@ -82,6 +82,25 @@ python tools/krkrz_gdk.py --project /path/to/game --target scarlett build stage 
 | `config.options` が効かない | `<exe名>.cf` はデスクトップだけ → `config.cf` で置く |
 | エラーダイアログを Ⓐ で閉じられない (Ⓑ では閉じる) | `System.inform` / 未処理例外のダイアログの OK に初期フォーカスが無く、Ⓐ (Enter の合成) が空振りしていた → core で OK (confirm は「はい」) に初期フォーカス。devkit で Ⓐ 1 回で閉じることを確認 |
 
+## マウス / キーボード (`gameinput=yes`)
+
+`config.options` に `gameinput=yes` (起動引数なら `-gameinput=yes`) を書くと、マウスとキーボードを GameInput から読む
+(既定は off)。SDL の初期化より前に要る設定なので、`src/gdkapp.cpp` の `TVPAppInit` が起動引数と `config.cf` から
+この項目だけを先に読み、SDL のヒント `SDL_WINDOWS_GAMEINPUT` / `SDL_WINDOWS_RAW_KEYBOARD` を立てる。
+SDL 側は fork の変更で、Xbox では GameInput の初期化時にマウス / キーボードとも読む。
+
+| 入力 | 状況 |
+|---|---|
+| キーボード | devkit のリモート制御から届くことを確認 (2026-10-12) |
+| マウスのボタン | 同上 |
+| マウスの移動 | **リモート制御からは取れない**。GDK 250404 の GameInput (API バージョン 0) のマウス状態は相対移動の積算値 (`positionX/Y`) だけで、リモート制御の移動は読み取りが届いても値が 0 のまま (絶対座標で送られていると見られる)。クリックの位置も (0,0) から動かない |
+| USB マウス (実機に直結) | 未確認。相対移動で届くはずなので動く見込み |
+
+- 相対モードは使わない。GameInput の相対移動を SDL が積算してウィンドウ内に収めた位置が、通常のマウスイベントとして届く
+- Xbox には OS のカーソル表示が無いので、ポインタはゲーム側で描く必要がある
+- リモート制御のマウス移動に対応するには、絶対座標を持つ新しい GameInput (v1 以降) への移行 (GDK の更新) と、
+  SDL 側での絶対座標の扱いが要る
+
 ## 既知の制限・未確認
 
 - **動画の再生矩形**: `vomOverlay` / `vomMixer` の `setPos` / `setSize` が効かず画面全体に出る (SDL 版共通の制限。
@@ -90,4 +109,5 @@ python tools/krkrz_gdk.py --project /path/to/game --target scarlett build stage 
 - Xbox One 実機は未確認 (Series devkit の互換動作のみ)
 - PC の D3D12 は WIN 版で確認済み (2026-10-11: Canvas の各ページ・カスタムシェーダー・GPU パーティクル・線描画・Elements)。
   Desktop (GDK) の既定は OpenGL のまま
+- マウス: リモート制御のマウス移動が取れない (新しい GameInput への移行が要る)。USB マウスは未確認 (上の「マウス / キーボード」)
 - devkit のネットワーク越しの `-replweb`、パッケージ (xvc) の chunk 分割、実績 / ユーザー / ストアは未着手

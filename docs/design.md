@@ -123,6 +123,7 @@ MicrosoftGame.config / ロゴ / MakePkg は使わず、`package` は layout の 
 | GDK / GXDK の CMake 対応 | VS generator の `Gaming.*` platform でビルドできるようにする |
 | HIDAPI の NULL ガード | GameInput が名前 NULL のパッドを渡すと `HIDAPI_DriverSwitch_IsSupportedDevice` の `SDL_strcmp(NULL, ...)` で落ちる (上流 main と同じ `name &&`)。Desktop で無言終了していた原因 |
 | Xbox One の行ピッチ | D3D12 のバッファ→テクスチャ転送の行ピッチを 256 で揃えていたが、Xbox One は 1024 が必要 (`SDL_D3D12_TEXTURE_DATA_PITCH_ALIGNMENT`)。Elements のダイアログを開くとクラッシュしていた |
+| Xbox の GameInput のマウス / キーボード | Xbox では raw mouse / keyboard の切り替えが未対応 (`SDL_Unsupported`) のスタブで、GameInput がデバイスを見つけても読まなかった。Xbox ではこれを GameInput の読み取り対象の切り替えにつなぎ、GameInput の初期化時にマウス / キーボードとも読む (`SDL_windowsrawinput.c` / `SDL_windowsvideo.c`) |
 | GPU レンダラーのシェーダー事前コンパイル | SDL_Renderer (GPU) 自身の D3D12 シェーダーを、ビルド時に GXDK の dxc で機種向けにコンパイルする (`src/render/gpu/shaders/compile_shaders_xbox.cmake`) |
 
 上流 SDL は AI 生成のコントリビューションを受け付けていないので、これらは fork に留める。

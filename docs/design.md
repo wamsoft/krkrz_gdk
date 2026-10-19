@@ -16,7 +16,7 @@ Xbox の実機での運用と分かったことは [xbox.md](xbox.md)。
 |---|---|---|
 | エンジン | `${KRKRZ_BASE}/krkrz_dev` (**master**) | core (src/core) と全プラグイン (src/plugins/*) |
 | 共通ビルドシステム | `krkrz_gdk` (本リポジトリ、公開・MIT) | CMake 外枠 / Xbox 用アプリクラス / パッケージ化ツール / サンプル設定 |
-| 案件 | `PROJECT_DIR` (非公開) | `gdk-config.json` 1 本 + 資材。出力も `PROJECT_DIR/build/gdk/` |
+| プロジェクト | `PROJECT_DIR` (非公開) | `gdk-config.json` 1 本 + 資材。出力も `PROJECT_DIR/build/gdk/` |
 
 PROJECT_DIR 省略時は krkrz_gdk 同梱のサンプル設定 (コアデモ) をビルドする。
 
@@ -34,7 +34,7 @@ krkrz_gdk/
   CMakeLists.txt          外枠 (core を add_subdirectory)
   CMakePresets.json       VS2022 generator + Gaming.* platform (gdk-desktop / gxdk-scarlett / gxdk-xboxone) と WIN 版の win-x64
   Makefile                tools/krkrz_gdk.py の薄いラッパー (PROJECT_DIR / TARGET / CONFIG)
-  gdk-config.json         サンプル案件 (コアデモ)
+  gdk-config.json         サンプル (コアデモ)
   cmake/
     KrkrzGDK.cmake        ターゲット判定、Xbox 向けの core オプション、krkrz_platform_target_hook
     triplets/             x64-xbox-{scarlett,xboxone}-staticcrt.cmake
@@ -155,6 +155,6 @@ XGameRuntime の初期化は SDL 側 (`SDL_sysmain_runapp.cpp`)。core の main 
 
 ## 11. 公開リポジトリとしての注意
 
-- 案件名・タイトル・課題キーを書かない。identity の実値は案件側の gdk-config.json にだけ置く
+- 取引先名・タイトル名・課題キーを書かない。identity の実値はプロジェクトフォルダ側の gdk-config.json にだけ置く
 - 他機種のコンソール SDK 由来の情報は持ち込まない。Xbox 向けは公開 GDK と SDL 上流に既に出ている範囲
   (platform 名、ライブラリ名、ツール名) に留める

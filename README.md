@@ -1,7 +1,17 @@
-# krkrz_gdk
+# krkrz_gdk — 吉里吉里Z Microsoft GDK (PC / Xbox) 版
+
+日本語 | [English](README_en.md)
 
 吉里吉里Z (krkrz) を **Microsoft GDK (PC / Xbox) 向けにビルド・パッケージ化する**ための外枠リポジトリです。
 SDL3 ベースで、プラグインは全て静的リンクします。
+
+- エンジン本体とプラグインのソースは、隣に置いた [krkrz_dev](https://github.com/wamsoft/krkrz_dev) (**master**) を
+  `KRKRZ_BASE` 経由で参照します。このリポジトリには GDK 固有のビルド定義とパッケージングだけを置き、
+  エンジン本体・プラグインには手を入れません
+- タイトルごとの設定 (`gdk-config.json`) と資材はプロジェクトフォルダ (`PROJECT_DIR`) に置き、出力も
+  プロジェクトフォルダに出します。このリポジトリだけでも、同梱のサンプル (コアデモ) としてビルドできます
+- `cmake` (プラグイン構成) と `assetPack` (資材の取り込み) は krkrz_android / krkrz_ios / krkrz_linux /
+  krkrz_web と共通の書式です
 
 | ターゲット | platform | 状況 |
 |---|---|---|
@@ -10,28 +20,18 @@ SDL3 ベースで、プラグインは全て静的リンクします。
 | `xboxone` | Gaming.Xbox.XboxOne.x64 (Xbox One) | Xbox Series devkit (互換動作) で起動を確認。Xbox One 実機は未確認 |
 | `win` | x64 (GDK なし、通常の Win32) | Xbox と同じ描画構成 (SDL_GPU / D3D12) の PC 版。開発中の確認用 |
 
-エンジン本体は持たず、隣に置いた [krkrz_dev](https://github.com/wamsoft/krkrz_dev) (**master**) を参照します。
-案件ごとの設定と資材は案件フォルダ (`PROJECT_DIR`) に置き、出力も案件フォルダに出します。
-構成は krkrz_android / krkrz_web / krkrz_ios / krkrz_linux と同じ外枠方式です (このリポジトリは「ガワ」のみ。
-エンジン本体・プラグインには手を入れず、GDK 固有のビルド定義・パッケージングだけを持ちます)。
-
-```
-KRKRZ_BASE/
-  krkrz_dev/     エンジン + プラグイン (git clone -b master --recursive)
-  krkrz_gdk/     このリポジトリ (共通ビルドシステム)
-PROJECT_DIR/     案件フォルダ: gdk-config.json + 資材。出力は PROJECT_DIR/build/gdk/
-```
-
 ## 必要なもの
 
 - Visual Studio 2022 (C++ / CMake) と Microsoft GDK (VS 統合済みのエディション。既定 `250404`)
-  - Xbox ターゲットは GDKX (Xbox 拡張) と devkit も必要 (Microsoft との開発者契約が要ります)
+  - Xbox ターゲットは GDKX (Xbox 拡張) と devkit も必要です (Microsoft との開発者契約が要ります)
   - Xbox ターゲットは Canvas のシェーダー変換に Vulkan SDK (glslangValidator / spirv-cross) も使います
-- vcpkg (`VCPKG_ROOT`)
+- [vcpkg](https://github.com/microsoft/vcpkg) — 環境変数 `VCPKG_ROOT` に導入先を指定
 - Python 3.9 以降 (標準ライブラリのみ使用)
 - git (configure 時に SDL3 などを取得するためネットワークが必要)
 
-## 準備
+## セットアップ
+
+krkrz_dev とこのリポジトリを同じフォルダに clone します。
 
 ```bash
 cd $KRKRZ_BASE
@@ -39,15 +39,22 @@ git clone -b master --recursive https://github.com/wamsoft/krkrz_dev.git
 git clone https://github.com/wamsoft/krkrz_gdk.git
 ```
 
+```
+KRKRZ_BASE/
+  krkrz_dev/     エンジン + プラグイン (git clone -b master --recursive)
+  krkrz_gdk/     このリポジトリ (共通ビルドシステム)
+PROJECT_DIR/     プロジェクトフォルダ: gdk-config.json + 資材。出力は PROJECT_DIR/build/gdk/
+```
+
 `KRKRZ_BASE` 環境変数を設定しない場合は krkrz_gdk の親フォルダを使います。
 
-## ビルド
+## ビルドと実行
 
 ```bash
 # サンプル (コアデモ) を Desktop 向けにビルド → layout 作成 → msixvc 作成
 python tools/krkrz_gdk.py all
 
-# 案件を指定
+# プロジェクトフォルダを指定
 python tools/krkrz_gdk.py --project /path/to/game --target desktop all
 
 # layout の exe を直接起動 (Desktop)
@@ -55,6 +62,7 @@ python tools/krkrz_gdk.py --project /path/to/game run
 ```
 
 `make PROJECT_DIR=/path/to/game TARGET=desktop all` でも同じです (Makefile は薄いラッパー)。
+`all` は `gen` → `configure` → `build` → `stage` → `package` を順に実行します。
 
 | コマンド | 内容 |
 |---|---|
@@ -68,6 +76,16 @@ python tools/krkrz_gdk.py --project /path/to/game run
 | `deploy` / `launch` | xbapp で devkit に送って起動 (Xbox) |
 | `vars` | 解決済みのパスなどを表示 |
 
+## プロジェクトフォルダ (PROJECT_DIR)
+
+このリポジトリは共通のビルドシステムで、ビルドするタイトルの設定と資材は別のフォルダに置けます。
+
+| 変数 | 意味 |
+|---|---|
+| `BUILD_SYSTEM_DIR` | このリポジトリのルート。ツールが自動で決めます |
+| `PROJECT_DIR` | プロジェクトフォルダ (`--project` か環境変数 `PROJECT_DIR`)。`${PROJECT_DIR}/gdk-config.json` を読みます。未指定ならこのリポジトリ自身 (サンプル) |
+| `KRKRZ_BASE` | krkrz_dev の親フォルダ。未指定なら krkrz_gdk の親フォルダ |
+
 出力先:
 
 ```
@@ -79,13 +97,14 @@ PROJECT_DIR/build/gdk/
 ```
 
 ビルドツリーのパスが長いと依存ライブラリの取得に失敗します (Windows のパス長制限)。
-案件フォルダが深い場合は `KRKRZ_GDK_BUILD_ROOT` 環境変数か gdk-config.json の `buildDir` で短い場所に移してください。
+プロジェクトフォルダが深い場合は `KRKRZ_GDK_BUILD_ROOT` 環境変数か gdk-config.json の `buildDir` で
+短い場所に移してください。
 
 ## gdk-config.json
 
 サンプルはこのリポジトリ直下の [gdk-config.json](gdk-config.json) です。
-`cmake` と `assetPack` の書式は krkrz_android の app-config.json / krkrz_ios / krkrz_linux と共通なので、
-1 つの案件フォルダに並べて同じ data/ を使い回せます。
+`cmake` と `assetPack` の書式は他の外枠と共通なので、1 つのプロジェクトフォルダに各機種の設定ファイルを
+並べて同じ data/ を使い回せます。
 
 | キー | 内容 |
 |---|---|
@@ -93,7 +112,7 @@ PROJECT_DIR/build/gdk/
 | `exeName` | 実行ファイル名 (拡張子なし) |
 | `orgName` / `appName` | `<exe>.cf` に書く orgname / appname (セーブ先の識別) |
 | `targets` | 対象ターゲット。先頭が `--target` 省略時の既定 |
-| `identity` | `name` / `publisher` / `titleId` / `msaAppId` / `storeId` / `scid` (Partner Center の値。実値は案件側にだけ置く) |
+| `identity` | `name` / `publisher` / `titleId` / `msaAppId` / `storeId` / `scid` (Partner Center の値。実値はプロジェクトフォルダ側にだけ置く) |
 | `shellVisuals` | `publisherDisplayName` / `description` / `foregroundText` / `backgroundColor` |
 | `logoDir` | `Logo44x44.png` / `Logo100x100.png` / `Logo150x150.png` / `Logo480x480.png` / `SplashScreenImage.png` を置いたフォルダ。無いものは placeholder を生成 |
 | `icon` | exe に埋め込む .ico (`KRKRZ_WIN_ICON`) |
@@ -108,26 +127,16 @@ PROJECT_DIR/build/gdk/
 | `gdk.persistentLocalStorageMB` | MicrosoftGame.config の PersistentLocalStorage サイズ (既定 256。0 で出力しない) |
 | `buildDir` | 出力ルート (既定 `${PROJECT_DIR}/build/gdk`) |
 
-`${PROJECT_DIR}` / `${BUILD_SYSTEM_DIR}` / `${KRKRZ_BASE}` と環境変数を展開します。相対パスは PROJECT_DIR 基準です。
+`cmake` / `assetPack` / パスの `${...}` 展開 (`${PROJECT_DIR}` / `${BUILD_SYSTEM_DIR}` / `${KRKRZ_BASE}` と
+環境変数。相対パスは PROJECT_DIR 基準) の書式は、公開サイトの
+[外枠リポジトリの共通設定](https://wamsoft.github.io/krkrz_dev/topics/core/platform_config/) を参照してください。
 
-### assetPack
+### assetPack (GDK での動き)
 
-```json
-"assetPack": {
-  "baseFolder": "${PROJECT_DIR}",
-  "transfer": "copy",
-  "sources": [
-    { "type": "mirror",  "from": "data",    "to": "data", "exclude": ["**/*.psd", "**/*.bak"] },
-    { "type": "flatten", "from": "archive", "include": ["*.xp3"] }
-  ]
-}
-```
-
-- `mirror` はフォルダ構成を保って `to` へ、`flatten` はファイル名だけで `to` 直下へ置きます
-- `include` / `exclude` は Ant 風グロブ (`**` は 0 個以上のフォルダ)
-- 同じ配置先は先に書いたものが勝ちます。エンジン一式と生成物は assetPack より先に置かれます
+- 資材は layout の exe と同じフォルダを起点に置きます。`transfer` は `copy` (既定) と `hardlink` に対応します
+- エンジン一式と生成物は assetPack より先に置かれます (同じ名前のファイルを assetPack で上書きすることはできません)
 - エンジンは起動時に exe と同じフォルダの `data.xp3` → exe 結合 xp3 → `data/startup.tjs` の順で探します
-- xp3 はこのリポジトリでは作りません。案件側で作ったものを `flatten` で取り込みます
+- xp3 はこのリポジトリでは作りません。タイトル側で作ったものを `flatten` で取り込みます
 
 ## SDL3
 
@@ -225,6 +234,8 @@ D3D12 に点の大きさが無いので四角形で代用しています。
 | 本体 [PlatformPorting.md](https://github.com/wamsoft/krkrz/blob/master/doc/PlatformPorting.md) | 外枠から本体を組み込む口 (共通) |
 | 本体 [CanvasGPU.md](https://github.com/wamsoft/krkrz/blob/master/doc/CanvasGPU.md) | Canvas の SDL_GPU 版 / シェーダー変換 (DXIL を含む) |
 
+吉里吉里Z 本体のドキュメントは [公開サイト](https://wamsoft.github.io/krkrz_dev/) にあります。
+
 ## ライセンス
 
 このリポジトリ (ビルドスクリプト・ツール・テンプレート) は [MIT License](LICENSE) です。
@@ -235,4 +246,4 @@ D3D12 に点の大きさが無いので四角形で代用しています。
 - SDL3 (zlib License) と、vcpkg / FetchContent で取得する依存ライブラリ
 - Microsoft GDK (Microsoft のライセンス条項)
 
-配布物に必要なライセンス表記は、使ったエンジン・プラグイン・ライブラリに合わせて案件側で同梱してください。
+配布物に必要なライセンスの表記は、使ったエンジン・プラグイン・ライブラリに合わせてタイトル側で同梱してください。
